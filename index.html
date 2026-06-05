@@ -381,7 +381,7 @@ function App(){
         const now=new Date().toISOString();
         const url=`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(GOOGLE_CALENDAR_ID)}/events?key=${GOOGLE_API_KEY}&timeMin=${now}&singleEvents=true&maxResults=250&orderBy=startTime`;
         const res=await fetch(url);
-        if(!res.ok)return;
+        if(!res.ok){console.warn("[GCal] Error HTTP:",res.status);return;}
         const data=await res.json();
         const nb={kichi:[],yamaha:[]};
         (data.items||[]).forEach(ev=>{
@@ -391,8 +391,9 @@ function App(){
           if(title.includes("kichi"))nb.kichi.push(dateStr);
           if(title.includes("yamaha"))nb.yamaha.push(dateStr);
         });
+        console.log("[GCal] Fechas bloqueadas:",nb);
         setGcBooked(nb);
-      }catch(e){}
+      }catch(e){console.warn("[GCal] Fetch falló:",e);}
     };
     fetchGCal();
   },[]);
