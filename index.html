@@ -395,7 +395,8 @@ function App(){
             if(!endD)return;
             const cur=new Date(dateStr+"T12:00:00");
             const checkout=new Date(endD+"T12:00:00");
-            checkout.setDate(checkout.getDate()-1); // dejar día de salida libre
+            // end.date es exclusivo en Google API (restar 1 día); end.dateTime ya es el día de salida
+            if(ev.end?.date)checkout.setDate(checkout.getDate()-1);
             while(cur<checkout){nb.apt.push(cur.toISOString().slice(0,10));cur.setDate(cur.getDate()+1);}
           }
         });
