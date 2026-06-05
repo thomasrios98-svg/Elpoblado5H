@@ -178,6 +178,10 @@ const BOOKED={
 };
 const NO_WIFI=[];
 
+// ── GOOGLE CALENDAR CONFIG ────────────────────────────────────────────────────
+const GOOGLE_API_KEY="AIzaSyAdqLVRJMRUnOcUM8mAznpB7yxiy10xUMQ";
+const GOOGLE_CALENDAR_ID="thomasrios98@gmail.com";
+
 // ── PROMOCIONES ──────────────────────────────────────────────────────────────
 const PROMOS = {
   kichi: {
@@ -219,7 +223,7 @@ const fmt=(s)=>s?new Date(s+"T12:00:00").toLocaleDateString("es-VE",{weekday:"sh
 const fmtL=(s)=>s?new Date(s+"T12:00:00").toLocaleDateString("es-VE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"";
 
 // ── CALENDAR ─────────────────────────────────────────────────────────────────
-function Cal({boatId,sel,onToggle,checkinMode,checkin,checkout,onDayClick,promoLowOnly=false,priceFor}){
+function Cal({boatId,sel,onToggle,checkinMode,checkin,checkout,onDayClick,promoLowOnly=false,priceFor,gcBooked={}}){
   const td=new Date();
   const[vY,setVY]=useState(td.getFullYear());
   const[vM,setVM]=useState(td.getMonth());
@@ -254,7 +258,7 @@ function Cal({boatId,sel,onToggle,checkinMode,checkin,checkout,onDayClick,promoL
           const maxDate=new Date();
           maxDate.setDate(maxDate.getDate()+60);
           const beyondLimit=new Date(ds+"T12:00:00")>maxDate;
-          const blk=boatId?BOOKED[boatId]?.includes(ds):BOOKED.apt?.includes(ds);
+          const blk=boatId?(BOOKED[boatId]?.includes(ds)||gcBooked[boatId]?.includes(ds)):BOOKED.apt?.includes(ds);
           const inRange=isInRange(ds);
           const isci=isCI(ds),isco=isCO(ds);
           const s=sel?sel.includes(ds):false;
@@ -370,6 +374,28 @@ function App(){
   const[notas,setNotas]=useState("");
   const[done,setDone]=useState(false);
   const[lastDep,setLastDep]=useState(0);
+  const[gcBooked,setGcBooked]=useState({kichi:[],yamaha:[]});
+  useEffect(()=>{
+    const fetchGCal=async()=>{
+      try{
+        const now=new Date().toISOString();
+        const url=`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(GOOGLE_CALENDAR_ID)}/events?key=${GOOGLE_API_KEY}&timeMin=${now}&singleEvents=true&maxResults=250&orderBy=startTime`;
+        const res=await fetch(url);
+        if(!res.ok)return;
+        const data=await res.json();
+        const nb={kichi:[],yamaha:[]};
+        (data.items||[]).forEach(ev=>{
+          const title=(ev.summary||"").toLowerCase();
+          const dateStr=(ev.start?.date||ev.start?.dateTime||"").slice(0,10);
+          if(!dateStr)return;
+          if(title.includes("kichi"))nb.kichi.push(dateStr);
+          if(title.includes("yamaha"))nb.yamaha.push(dateStr);
+        });
+        setGcBooked(nb);
+      }catch(e){}
+    };
+    fetchGCal();
+  },[]);
   const ref=useRef();
 
   const goBook=(m)=>{setMode(m);setPage("book");setAptStep(0);setBoatStep(0);setTimeout(()=>ref.current?.scrollIntoView({behavior:"smooth"}),80);};
@@ -735,7 +761,7 @@ function App(){
                           <span style={{fontSize:11,color:"#94a3b8",marginLeft:6}}>máx 7 personas</span>
                         </div>
                       </div>
-                      <Cal checkinMode={true} checkin={af.checkin} checkout={af.checkout} onDayClick={handleDayClick} promoLowOnly={!!selectedPromo}/>
+                      <Cal checkinMode={true} checkin={af.checkin} checkout={af.checkout} onDayClick={handleDayClick} promoLowOnly={!!selectedPromo} gcBooked={gcBooked}/>
                       {nights>0&&(
                         <div className="pbox" style={{marginTop:12}}>
                           <div style={{fontSize:10,color:"#0369a1",fontWeight:900,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Desglose por noche</div>
@@ -984,7 +1010,7 @@ function App(){
                               <img src={b.img} alt={b.name} className="boat-dates-img"/>
                               <div><div className="bb" style={{fontSize:18,color:"#0f172a"}}>{b.name}</div><div style={{fontSize:11,color:"#94a3b8"}}>{dates.length} día{dates.length!==1?"s":""} seleccionado{dates.length!==1?"s":""}</div></div>
                             </div>
-                            <Cal boatId={bid} sel={dates} onToggle={(ds)=>togDate(bid,ds)} priceFor={(ds)=>b.price(ds,bf.pax[bid]||2)}/>
+                            <Cal boatId={bid} sel={dates} onToggle={(ds)=>togDate(bid,ds)} priceFor={(ds)=>b.price(ds,bf.pax[bid]||2)} gcBooked={gcBooked}/>
                             {dates.length>0&&(
                               <div style={{padding:"8px 12px",background:"#f8fafc",borderTop:"1px solid #e2e8f0"}}>
                                 {dates.map(ds=><span key={ds} className="chip" style={{background:SC[getSeason(ds)]}} onClick={()=>togDate(bid,ds)}>{fmt(ds)} {SL[getSeason(ds)].split(" ")[0]} ✕</span>)}
