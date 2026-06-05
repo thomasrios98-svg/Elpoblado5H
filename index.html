@@ -258,7 +258,7 @@ function Cal({boatId,sel,onToggle,checkinMode,checkin,checkout,onDayClick,promoL
           const maxDate=new Date();
           maxDate.setDate(maxDate.getDate()+60);
           const beyondLimit=new Date(ds+"T12:00:00")>maxDate;
-          const blk=boatId?(BOOKED[boatId]?.includes(ds)||gcBooked[boatId]?.includes(ds)):BOOKED.apt?.includes(ds);
+          const blk=boatId?(BOOKED[boatId]?.includes(ds)||gcBooked[boatId]?.includes(ds)):(BOOKED.apt?.includes(ds)||gcBooked.apt?.includes(ds));
           const inRange=isInRange(ds);
           const isci=isCI(ds),isco=isCO(ds);
           const s=sel?sel.includes(ds):false;
@@ -374,7 +374,7 @@ function App(){
   const[notas,setNotas]=useState("");
   const[done,setDone]=useState(false);
   const[lastDep,setLastDep]=useState(0);
-  const[gcBooked,setGcBooked]=useState({kichi:[],yamaha:[]});
+  const[gcBooked,setGcBooked]=useState({kichi:[],yamaha:[],apt:[]});
   useEffect(()=>{
     const fetchGCal=async()=>{
       try{
@@ -383,13 +383,21 @@ function App(){
         const res=await fetch(url);
         if(!res.ok){console.warn("[GCal] Error HTTP:",res.status);return;}
         const data=await res.json();
-        const nb={kichi:[],yamaha:[]};
+        const nb={kichi:[],yamaha:[],apt:[]};
         (data.items||[]).forEach(ev=>{
           const title=(ev.summary||"").toLowerCase();
           const dateStr=(ev.start?.date||ev.start?.dateTime||"").slice(0,10);
           if(!dateStr)return;
           if(title.includes("kichi"))nb.kichi.push(dateStr);
           if(title.includes("yamaha"))nb.yamaha.push(dateStr);
+          if(title.includes("apto 5h")){
+            const endD=ev.end?.date||(ev.end?.dateTime||"").slice(0,10);
+            if(!endD)return;
+            const cur=new Date(dateStr+"T12:00:00");
+            const checkout=new Date(endD+"T12:00:00");
+            checkout.setDate(checkout.getDate()-1); // dejar día de salida libre
+            while(cur<checkout){nb.apt.push(cur.toISOString().slice(0,10));cur.setDate(cur.getDate()+1);}
+          }
         });
         console.log("[GCal] Fechas bloqueadas:",nb);
         setGcBooked(nb);
