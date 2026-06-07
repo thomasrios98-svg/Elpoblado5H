@@ -481,7 +481,7 @@ function App(){
   const nonPromoBoatTotal = activePromo ? bf.boats.filter(bid=>bid!==activePromo.boat).reduce((s,bid)=>{
     const b=BOATS[bid]; return s+(bf.dates[bid]||[]).reduce((ss,ds)=>{const pr=b.price(ds,bf.pax[bid]);return ss+(pr?pr.p:0);},0);
   },0) : 0;
-  const promoTotal = promoBasePrice + promoExtraNightPrice + promoExtraBoatTotal + nonPromoBoatTotal;
+  const promoTotal = promoBasePrice + promoExtraNightPrice + promoExtraBoatTotal + nonPromoBoatTotal + eTotal;
   const promoDeposit = Math.ceil(promoTotal * .3);
 
   const hasDates=bf.boats.length>0&&bf.boats.every(bid=>(bf.dates[bid]||[]).length>0);
