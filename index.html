@@ -402,16 +402,26 @@ function App(){
         const nb={kichi:[],yamaha:[],apt:[]};
         (data.items||[]).forEach(ev=>{
           const title=(ev.summary||"").toLowerCase();
-          const dateStr=(ev.start?.date||ev.start?.dateTime||"").slice(0,10);
-          if(!dateStr)return;
-          if(title.includes("kichi"))nb.kichi.push(dateStr);
-          if(title.includes("yamaha"))nb.yamaha.push(dateStr);
+          const startD=(ev.start?.date||ev.start?.dateTime||"").slice(0,10);
+          if(!startD)return;
+          if(title.includes("kichi")||title.includes("yamaha")){
+            const rawEnd=ev.end?.date||(ev.end?.dateTime||"").slice(0,10);
+            if(!rawEnd)return;
+            const endDate=new Date(rawEnd+"T12:00:00");
+            if(ev.end?.date)endDate.setDate(endDate.getDate()-1); // end.date es exclusivo
+            const cur=new Date(startD+"T12:00:00");
+            while(cur<=endDate){
+              const ds=cur.toISOString().slice(0,10);
+              if(title.includes("kichi"))nb.kichi.push(ds);
+              if(title.includes("yamaha"))nb.yamaha.push(ds);
+              cur.setDate(cur.getDate()+1);
+            }
+          }
           if(title.includes("apto 5h")){
             const endD=ev.end?.date||(ev.end?.dateTime||"").slice(0,10);
             if(!endD)return;
-            const cur=new Date(dateStr+"T12:00:00");
+            const cur=new Date(startD+"T12:00:00");
             const checkout=new Date(endD+"T12:00:00");
-            // end.date es exclusivo en Google API (restar 1 día); end.dateTime ya es el día de salida
             if(ev.end?.date)checkout.setDate(checkout.getDate()-1);
             while(cur<checkout){nb.apt.push(cur.toISOString().slice(0,10));cur.setDate(cur.getDate()+1);}
           }
