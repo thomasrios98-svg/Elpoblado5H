@@ -439,6 +439,16 @@ function App(){
   // Apartment helpers
   const nights=nightsBetween(af.checkin,af.checkout);
   const aptTot=aptTotal(af.checkin,af.checkout);
+  const aptRangeBlocked=af.checkin&&af.checkout?(()=>{
+    const cur=new Date(af.checkin+"T12:00:00");
+    const end=new Date(af.checkout+"T12:00:00");
+    while(cur<end){
+      const ds=cur.toISOString().slice(0,10);
+      if(BOOKED.apt?.includes(ds)||gcBooked.apt?.includes(ds))return true;
+      cur.setDate(cur.getDate()+1);
+    }
+    return false;
+  })():false;
 
   // Boat helpers
   const togBoat=(id)=>setBf(f=>{const on=f.boats.includes(id);return{...f,boats:on?f.boats.filter(x=>x!==id):[...f.boats,id],dates:{...f.dates,[id]:[]}};});
@@ -814,9 +824,14 @@ function App(){
                           ⚠️ El mínimo de estadía es <strong>2 noches</strong>. Por favor selecciona un checkout más tarde.
                         </div>
                       )}
+                      {aptRangeBlocked&&(
+                        <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:10,padding:"10px 14px",marginTop:12,fontSize:12,color:"#c2410c",fontWeight:600}}>
+                          ⚠️ Hay fechas reservadas dentro del rango seleccionado. Por favor elige otras fechas.
+                        </div>
+                      )}
                       <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
                         {mode==="both"?(
-                          <button className="btn-next" disabled={nights<2} onClick={()=>{
+                          <button className="btn-next" disabled={nights<2||aptRangeBlocked} onClick={()=>{
                               setAptStep(1);
                               // Auto-select promo boat if promo active
                               if(activePromo&&!bf.boats.includes(activePromo.boat)){
@@ -826,7 +841,7 @@ function App(){
                             {selectedPromo?"Siguiente: Seleccionar lancha →":"Siguiente: Lanchas →"}
                           </button>
                         ):(
-                          <button className="btn-next" disabled={nights<2} onClick={()=>setAptStep(1)}>Siguiente →</button>
+                          <button className="btn-next" disabled={nights<2||aptRangeBlocked} onClick={()=>setAptStep(1)}>Siguiente →</button>
                         )}
                       </div>
                     </div>
