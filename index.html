@@ -181,7 +181,7 @@ function aptTotal(ci,co){
 const BOATS={
   kichi:{id:"kichi",name:"KICHI",subtitle:"Lancha Clásica",capacity:7,img:IK,
     features:["7 pasajeros","Marino","Salvavidas","Toldo","Equipo de sonido"],
-    price:(d,pax)=>{if(!d)return null;const s=getSeason(d),w=[0,5,6].includes(new Date(d+"T12:00:00").getDay());if(s==="peak")return{p:300,l:"Temp. Alta"};if(s==="mid"){const ex=(pax||2)>=7?20:0;const base=w?200:(d.slice(0,7)==="2026-07"?160:180);return{p:base+ex,l:"Temp. Media",ex};}return{p:w?200:160,l:w?"Vie–Dom":"Lun–Jue"};}},
+    price:(d,pax)=>{if(!d)return null;const s=getSeason(d),w=[0,5,6].includes(new Date(d+"T12:00:00").getDay());if(s==="peak")return{p:300,l:"Temp. Alta"};if(s==="mid"){const ex=(pax||2)>=7?20:0;return{p:(w?200:160)+ex,l:"Temp. Media",ex};}return{p:w?200:160,l:w?"Vie–Dom":"Lun–Jue"};}},
   yamaha:{id:"yamaha",name:"YAMAHA SX230",subtitle:"High Output · Twin Engine",capacity:9,img:IY,
     features:["9 pasajeros","Marino","Salvavidas","Toldo","2 sillas","Mesa de comer","Equipo de sonido"],
     price:(d,pax)=>{if(!d)return null;const s=getSeason(d),w=[0,5,6].includes(new Date(d+"T12:00:00").getDay()),ex=(pax||2)>=9?30:0;if(s==="peak")return{p:500+ex,l:"Temp. Alta",ex};if(s==="mid"){if(d.slice(0,7)==="2026-07")return{p:(w?300:260)+ex,l:"Temp. Media",ex};return{p:(w?320:280)+ex,l:"Temp. Media",ex};}return{p:(w?300:260)+ex,l:w?"Vie–Dom":"Lun–Jue",ex};}}
