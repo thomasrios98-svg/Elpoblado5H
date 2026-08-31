@@ -271,7 +271,7 @@ function Cal({boatId,sel,onToggle,checkinMode,checkin,checkout,onDayClick,promoL
           const ds=`${vY}-${String(vM+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
           const past=ds<ts;
           const maxDate=new Date();
-          maxDate.setDate(maxDate.getDate()+60);
+          maxDate.setDate(maxDate.getDate()+90);
           const maxDs=maxDate.toISOString().slice(0,10);
           const beyondLimit=ds>maxDs;
           const blk=boatId?(BOOKED[boatId]?.includes(ds)||gcBooked[boatId]?.includes(ds)):(BOOKED.apt?.includes(ds)||gcBooked.apt?.includes(ds));
