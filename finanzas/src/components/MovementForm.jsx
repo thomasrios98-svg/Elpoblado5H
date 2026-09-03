@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { UNITS, PAYMENT_METHODS, EXPENSE_CATEGORIES, EXPENSE_SCOPES } from '../lib/constants';
+import { UNITS, UNIT_LABELS, PAYMENT_METHODS, EXPENSE_CATEGORIES, EXPENSE_SCOPES } from '../lib/constants';
 import { todayISO } from '../lib/format';
 import { fetchBcvEurRate } from '../lib/exchangeRate';
 
@@ -87,7 +87,7 @@ export default function MovementForm({ editingMovement, onSubmit, onCancelEdit }
     const amt = Number(form.amount);
     if (!form.amount || Number.isNaN(amt) || amt <= 0) return 'El monto debe ser mayor a 0.';
     if (!form.method) return 'Selecciona un método de pago.';
-    if (!form.description.trim()) return 'La descripción es obligatoria.';
+    if (form.type === 'expense' && !form.description.trim()) return 'La descripción es obligatoria.';
     if (form.type === 'income' && !form.unit) return 'Selecciona la unidad del ingreso.';
     if (form.type === 'expense' && form.scope === 'individual' && !form.unit) {
       return 'Selecciona la unidad del gasto individual.';
@@ -105,12 +105,16 @@ export default function MovementForm({ editingMovement, onSubmit, onCancelEdit }
     }
     setError('');
 
+    const description =
+      form.description.trim() ||
+      (form.type === 'income' ? `Alquiler ${UNIT_LABELS[form.unit] || ''}`.trim() : '');
+
     const payload = {
       type: form.type,
       date: form.date,
       amount: Number(Number(form.amount).toFixed(2)),
       method: form.method,
-      description: form.description.trim(),
+      description,
       note: form.note.trim() || null,
     };
     if (form.type === 'income') {
@@ -308,10 +312,14 @@ export default function MovementForm({ editingMovement, onSubmit, onCancelEdit }
         )}
 
         <div className="field" style={{ gridColumn: '1 / -1' }}>
-          <label>Descripción</label>
+          <label>Descripción{form.type === 'income' ? ' (opcional)' : ''}</label>
           <input
             type="text"
-            placeholder="Ej: Pago de limpieza semanal"
+            placeholder={
+              form.type === 'income'
+                ? `Si la dejas vacía se usa "Alquiler ${UNIT_LABELS[form.unit] || ''}"`
+                : 'Ej: Pago de limpieza semanal'
+            }
             value={form.description}
             onChange={(e) => update('description', e.target.value)}
           />
