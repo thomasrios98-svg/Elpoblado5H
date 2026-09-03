@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { UNITS, PAYMENT_METHODS, EXPENSE_CATEGORIES, EXPENSE_SCOPES } from '../lib/constants';
 import { todayISO } from '../lib/format';
+import { fetchBcvEurRate } from '../lib/exchangeRate';
 
 const emptyForm = () => ({
   type: 'income',
   date: todayISO(),
+  currency: 'USD',
   amount: '',
+  vesAmount: '',
   method: PAYMENT_METHODS[0].id,
   unit: UNITS[0].id,
   scope: 'individual',
@@ -18,6 +21,10 @@ export default function MovementForm({ editingMovement, onSubmit, onCancelEdit }
   const [form, setForm] = useState(emptyForm());
   const [quickEntry, setQuickEntry] = useState(false);
   const [error, setError] = useState('');
+  const [rateInfo, setRateInfo] = useState(null);
+  const [rateLoading, setRateLoading] = useState(false);
+  const [rateError, setRateError] = useState('');
+  const [manualRate, setManualRate] = useState('');
   const amountRef = useRef(null);
 
   useEffect(() => {
@@ -25,7 +32,9 @@ export default function MovementForm({ editingMovement, onSubmit, onCancelEdit }
       setForm({
         type: editingMovement.type,
         date: editingMovement.date,
+        currency: 'USD',
         amount: String(editingMovement.amount ?? ''),
+        vesAmount: '',
         method: editingMovement.method,
         unit: editingMovement.unit || UNITS[0].id,
         scope: editingMovement.scope || 'individual',
@@ -36,12 +45,45 @@ export default function MovementForm({ editingMovement, onSubmit, onCancelEdit }
     }
   }, [editingMovement]);
 
+  useEffect(() => {
+    if (form.currency !== 'VES' || rateInfo || rateLoading) return;
+    setRateLoading(true);
+    setRateError('');
+    fetchBcvEurRate()
+      .then((data) => setRateInfo(data))
+      .catch((err) => setRateError(err?.message || 'No se pudo obtener la tasa del BCV.'))
+      .finally(() => setRateLoading(false));
+  }, [form.currency, rateInfo, rateLoading]);
+
+  const effectiveRate = Number(rateInfo?.rate) || Number(manualRate) || 0;
+
+  useEffect(() => {
+    if (form.currency !== 'VES') return;
+    const ves = Number(form.vesAmount);
+    if (!ves || !effectiveRate) {
+      setForm((f) => ({ ...f, amount: '' }));
+      return;
+    }
+    setForm((f) => ({ ...f, amount: (ves / effectiveRate).toFixed(2) }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.vesAmount, form.currency, effectiveRate]);
+
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
+  function refreshRate() {
+    setRateInfo(null);
+    setRateError('');
+  }
+
   function validate() {
     if (!form.date) return 'La fecha es obligatoria.';
+    if (form.currency === 'VES') {
+      const ves = Number(form.vesAmount);
+      if (!form.vesAmount || Number.isNaN(ves) || ves <= 0) return 'El monto en Bolívares debe ser mayor a 0.';
+      if (!effectiveRate) return 'No hay una tasa del BCV disponible. Espera a que cargue o escribe una manualmente.';
+    }
     const amt = Number(form.amount);
     if (!form.amount || Number.isNaN(amt) || amt <= 0) return 'El monto debe ser mayor a 0.';
     if (!form.method) return 'Selecciona un método de pago.';
@@ -86,7 +128,7 @@ export default function MovementForm({ editingMovement, onSubmit, onCancelEdit }
     if (editingMovement) {
       onCancelEdit();
     } else if (quickEntry) {
-      setForm((f) => ({ ...f, amount: '', description: '', note: '' }));
+      setForm((f) => ({ ...f, amount: '', vesAmount: '', description: '', note: '' }));
       amountRef.current?.focus();
     } else {
       setForm(emptyForm());
@@ -98,10 +140,18 @@ export default function MovementForm({ editingMovement, onSubmit, onCancelEdit }
       <div className="section-title">{editingMovement ? 'Editar movimiento' : 'Nuevo movimiento'}</div>
 
       <div className="tabs" style={{ marginBottom: 14 }}>
-        <button type="button" className={form.type === 'income' ? 'active' : ''} onClick={() => update('type', 'income')}>
+        <button
+          type="button"
+          className={form.type === 'income' ? 'active' : ''}
+          onClick={() => update('type', 'income')}
+        >
           Ingreso
         </button>
-        <button type="button" className={form.type === 'expense' ? 'active' : ''} onClick={() => update('type', 'expense')}>
+        <button
+          type="button"
+          className={form.type === 'expense' ? 'active' : ''}
+          onClick={() => setForm((f) => ({ ...f, type: 'expense', currency: 'USD', vesAmount: '' }))}
+        >
           Gasto
         </button>
       </div>
@@ -112,18 +162,87 @@ export default function MovementForm({ editingMovement, onSubmit, onCancelEdit }
           <input type="date" value={form.date} onChange={(e) => update('date', e.target.value)} />
         </div>
 
-        <div className="field">
-          <label>Monto (USD)</label>
-          <input
-            ref={amountRef}
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="0.00"
-            value={form.amount}
-            onChange={(e) => update('amount', e.target.value)}
-          />
-        </div>
+        {form.type === 'income' && (
+          <div className="field">
+            <label>Moneda del ingreso</label>
+            <select
+              value={form.currency}
+              onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value, vesAmount: '', amount: '' }))}
+            >
+              <option value="USD">Dólares (USD)</option>
+              <option value="VES">Bolívares (Bs)</option>
+            </select>
+          </div>
+        )}
+
+        {form.currency === 'VES' ? (
+          <div className="field">
+            <label>Monto en Bolívares</label>
+            <input
+              ref={amountRef}
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              value={form.vesAmount}
+              onChange={(e) => update('vesAmount', e.target.value)}
+            />
+          </div>
+        ) : (
+          <div className="field">
+            <label>Monto (USD)</label>
+            <input
+              ref={amountRef}
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              value={form.amount}
+              onChange={(e) => update('amount', e.target.value)}
+            />
+          </div>
+        )}
+
+        {form.currency === 'VES' && (
+          <div className="field" style={{ gridColumn: '1 / -1' }}>
+            <label>Tasa BCV (Euro) y equivalente en USD</label>
+            {rateLoading && <div className="text-muted" style={{ fontSize: 13 }}>Consultando tasa del BCV…</div>}
+            {!rateLoading && rateInfo && (
+              <div className="text-muted" style={{ fontSize: 13 }}>
+                1 EUR = {rateInfo.rate.toFixed(2)} Bs
+                {rateInfo.rateDate ? ` (actualizada ${new Date(rateInfo.rateDate).toLocaleDateString('es-VE')})` : ''}
+                {rateInfo.stale ? ' — no se pudo actualizar, usando la última tasa guardada' : ''}
+                {' · '}
+                <button type="button" className="btn secondary small" onClick={refreshRate} style={{ marginLeft: 6 }}>
+                  Actualizar tasa
+                </button>
+              </div>
+            )}
+            {!rateLoading && rateError && !rateInfo && (
+              <div style={{ fontSize: 13 }}>
+                <span style={{ color: 'var(--expense)' }}>{rateError}</span>{' '}
+                <button type="button" className="btn secondary small" onClick={refreshRate}>
+                  Reintentar
+                </button>
+                <div className="field" style={{ marginTop: 6, maxWidth: 200 }}>
+                  <label>O escribe la tasa manualmente (Bs por Euro)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={manualRate}
+                    onChange={(e) => setManualRate(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+            {form.vesAmount && effectiveRate > 0 && (
+              <div style={{ fontSize: 13, marginTop: 4, fontWeight: 600 }}>
+                Equivalente: ${form.amount || '0.00'}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="field">
           <label>Método de pago</label>

@@ -4,9 +4,12 @@ Sistema financiero web para El Poblado 5H: control de ingresos, gastos, saldos,
 rentabilidad y análisis mediante IA para las tres unidades (Apto 5H, Kichi y
 Yamaha). Es una app independiente del sitio de reservas (raíz del repo).
 
-Todos los montos son en USD. No tiene login, calendario, módulo de clientes,
-deudas, metas, modo oscuro, auditoría, backups manuales, búsqueda por texto ni
-notificaciones externas — por diseño.
+Todos los montos se guardan y reportan en USD. Como excepción, los ingresos se
+pueden registrar en Bolívares: el sistema convierte automáticamente a USD
+usando la tasa Euro oficial del BCV (ver "Conversión de Bolívares" más abajo).
+No tiene login, calendario, módulo de clientes, deudas, metas, modo oscuro,
+auditoría, backups manuales, búsqueda por texto ni notificaciones externas —
+por diseño.
 
 ## Stack
 
@@ -21,6 +24,9 @@ notificaciones externas — por diseño.
   hacia la API de Anthropic (Claude). La clave de API nunca llega al
   navegador; el cliente solo envía la pregunta y un resumen de los datos
   financieros ya calculados.
+- **Tasa de cambio**: otra Cloud Function (`getBcvEurRate`) consulta la tasa
+  oficial del BCV para el Euro (fuente pública, sin clave) y la cachea en
+  Firestore por 6 horas para no depender de esa fuente en cada consulta.
 
 ## Estructura
 
@@ -33,7 +39,8 @@ finanzas/
     components/     Layout, formularios y piezas reutilizables
     pages/          Dashboard, Movimientos, Saldos, Rentabilidad,
                     Estadísticas, Recurrentes, Asistente IA, Reportes
-  functions/        Cloud Function `financialAssistant` (proxy IA)
+  functions/        Cloud Functions: `financialAssistant` (proxy IA) y
+                    `getBcvEurRate` (tasa del BCV, con caché)
   firestore.rules
   firebase.json
 ```
@@ -137,6 +144,18 @@ descripción + categoría + unidad, cadencia ~mensual, montos similares) — no
 usa IA externa ni crea nada automáticamente. Las decisiones de "confirmar" o
 "ignorar" un patrón se guardan en la colección `recurringPatterns`.
 
+## Conversión de Bolívares
+
+En Movimientos, al registrar un **ingreso** se puede elegir moneda "Bolívares
+(Bs)". El formulario pide el monto en Bs, consulta la tasa oficial del BCV
+para el Euro (vía la Cloud Function `getBcvEurRate`, que a su vez consulta
+`ve.dolarapi.com` y cachea el resultado 6 horas en Firestore) y calcula
+Bs ÷ tasa = USD. Solo ese monto en USD queda guardado en el movimiento — no
+se guarda el monto en Bs ni la tasa usada, tal como se definió. Si la fuente
+de la tasa falla y no hay ninguna tasa cacheada, se puede escribir la tasa
+manualmente para no bloquear el registro. Los gastos siempre se registran en
+USD directamente.
+
 ## Reparto de gastos generales
 
 Los gastos marcados como **generales** se dividen en partes iguales (⅓ + ⅓ +
@@ -145,8 +164,11 @@ Los gastos **individuales** solo afectan a la unidad seleccionada.
 
 ## Estado de esta entrega
 
-El código quedó verificado con `npm run build` y `npm run lint` (sin errores)
-y con pruebas de renderizado de todas las rutas. No se pudo hacer una prueba
-end-to-end con datos reales porque este entorno no tiene un proyecto de
-Firebase propio: sigue los pasos 1–5 de arriba con tus propias credenciales
-para dejarlo funcionando por completo.
+La app está desplegada y en uso real sobre el proyecto `elpoblado5h-finanzaz`:
+Firestore, reglas de seguridad, la función `financialAssistant` y Firebase
+Hosting (`https://elpoblado5h-finanzaz.web.app`) ya fueron probados end-to-end
+(crear/editar/eliminar movimientos, saldos, y una llamada real al asistente de
+IA). La función `getBcvEurRate` y el flujo de ingresos en Bolívares se
+verificaron con `npm run build`/`npm run lint` y revisión de código, pero no
+se pudo probar en vivo en esta sesión — pruébalo desde la app y avisa si la
+tasa no carga o el cálculo se ve raro.

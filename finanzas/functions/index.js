@@ -1,6 +1,10 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret, defineString } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
+const admin = require('firebase-admin');
+
+admin.initializeApp();
+const db = admin.firestore();
 
 const anthropicApiKey = defineSecret('ANTHROPIC_API_KEY');
 const anthropicModel = defineString('ANTHROPIC_MODEL', { default: 'claude-sonnet-5' });
@@ -98,3 +102,44 @@ exports.financialAssistant = onCall(
     return { answer: answer || 'No obtuve una respuesta del modelo.' };
   }
 );
+
+const BCV_EUR_URL = 'https://ve.dolarapi.com/v1/monedas/eur';
+const BCV_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas: el BCV solo actualiza una vez por día hábil
+
+/**
+ * Devuelve la tasa oficial del BCV para el Euro, usada para convertir ingresos
+ * registrados en Bolívares a su equivalente en USD. Se cachea en Firestore
+ * para no depender de la fuente externa en cada consulta y para poder servir
+ * el último valor conocido si la fuente falla.
+ */
+exports.getBcvEurRate = onCall({ cors: true, timeoutSeconds: 30 }, async () => {
+  const cacheRef = db.collection('exchangeRates').doc('bcv_eur');
+  const snap = await cacheRef.get();
+  const cached = snap.exists ? snap.data() : null;
+  const isFresh = cached?.fetchedAt && Date.now() - cached.fetchedAt.toMillis() < BCV_CACHE_TTL_MS;
+
+  if (isFresh) {
+    return { rate: cached.rate, rateDate: cached.rateDate || null, stale: false, source: 'cache' };
+  }
+
+  try {
+    const res = await fetch(BCV_EUR_URL, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const rate = Number(data.promedio ?? data.venta ?? data.compra);
+    if (!rate || Number.isNaN(rate) || rate <= 0) throw new Error('Respuesta sin tasa válida');
+
+    const rateDate = data.fechaActualizacion || null;
+    await cacheRef.set({ rate, rateDate, fetchedAt: admin.firestore.FieldValue.serverTimestamp() });
+    return { rate, rateDate, stale: false, source: 'bcv' };
+  } catch (err) {
+    logger.error('Error obteniendo tasa BCV EUR', err);
+    if (cached?.rate) {
+      return { rate: cached.rate, rateDate: cached.rateDate || null, stale: true, source: 'cache-stale' };
+    }
+    throw new HttpsError(
+      'unavailable',
+      'No se pudo obtener la tasa del BCV y no hay ninguna tasa guardada anteriormente.'
+    );
+  }
+});
