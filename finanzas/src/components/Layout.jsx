@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useData } from '../context/DataContext';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: '📊' },
@@ -28,6 +29,32 @@ function NavItems({ onNavigate }) {
         </NavLink>
       ))}
     </>
+  );
+}
+
+function ErrorBanner() {
+  const { error } = useData();
+  if (!error) return null;
+
+  const isPermissionDenied = error.code === 'permission-denied';
+
+  return (
+    <div
+      style={{
+        background: '#fbe6e6',
+        border: '1px solid #f0c9c9',
+        color: 'var(--expense)',
+        borderRadius: 8,
+        padding: '10px 14px',
+        marginBottom: 16,
+        fontSize: 13,
+      }}
+    >
+      <strong>No se pudo conectar con la base de datos.</strong>{' '}
+      {isPermissionDenied
+        ? 'Firestore está rechazando las lecturas/escrituras — revisa que las reglas de seguridad (firestore.rules) estén publicadas en la consola de Firebase.'
+        : error.message}
+    </div>
   );
 }
 
@@ -66,7 +93,10 @@ export default function Layout({ children }) {
           <strong>El Poblado 5H · Finanzas</strong>
           <button onClick={() => setOpen((v) => !v)}>☰ Menú</button>
         </div>
-        <div className="content">{children}</div>
+        <div className="content">
+          <ErrorBanner />
+          {children}
+        </div>
       </div>
     </div>
   );

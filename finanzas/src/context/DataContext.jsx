@@ -23,6 +23,14 @@ export function DataProvider({ children }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    function handleError(source) {
+      return (err) => {
+        console.error(`[finanzas] Firestore (${source}):`, err);
+        setError(err);
+        setLoading(false);
+      };
+    }
+
     const unsubs = [
       onSnapshot(
         query(collection(db, 'movements'), orderBy('date', 'desc')),
@@ -30,17 +38,17 @@ export function DataProvider({ children }) {
           setMovements(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
           setLoading(false);
         },
-        (err) => setError(err)
+        handleError('movements')
       ),
       onSnapshot(
         query(collection(db, 'transfers'), orderBy('date', 'desc')),
         (snap) => setTransfers(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
-        (err) => setError(err)
+        handleError('transfers')
       ),
       onSnapshot(
         collection(db, 'recurringPatterns'),
         (snap) => setRecurringPatterns(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
-        (err) => setError(err)
+        handleError('recurringPatterns')
       ),
     ];
     return () => unsubs.forEach((u) => u());
