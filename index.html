@@ -157,6 +157,7 @@ function wifiPrice(d){return getSeason(d)==="peak"?50:25;}
 
 // ── APARTMENT PRICING ────────────────────────────────────────────────────────
 function aptNightPrice(d){
+  if(d>="2026-12-20"&&d<="2027-01-10")return 200;
   const s=getSeason(d);
   if(s==="peak")return 180;
   if(s==="mid")return 155;
