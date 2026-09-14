@@ -1,0 +1,61 @@
+rules_version = '2';
+
+// El sistema no tiene login (requisito del producto), por lo que estas reglas
+// no distinguen usuarios: cualquiera con la configuración de Firebase del
+// proyecto puede leer/escribir estas colecciones. La validación de forma de
+// abajo evita que se guarde basura, pero NO reemplaza autenticación. Si en el
+// futuro se agrega autenticación, restringe estas reglas por usuario/rol.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /movements/{id} {
+      allow read: if true;
+      allow delete: if true;
+      allow create, update: if isValidMovement(request.resource.data);
+    }
+
+    match /transfers/{id} {
+      allow read: if true;
+      allow delete: if true;
+      allow create, update: if isValidTransfer(request.resource.data);
+    }
+
+    match /recurringPatterns/{id} {
+      allow read: if true;
+      allow delete: if true;
+      allow create, update: if isValidRecurringPattern(request.resource.data);
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+
+  function isDateString(v) {
+    return v is string && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+  }
+
+  function isValidMovement(d) {
+    return d.type in ['income', 'expense']
+      && isDateString(d.date)
+      && d.amount is number && d.amount > 0
+      && d.method is string && d.method.size() > 0
+      && d.description is string && d.description.size() > 0
+      && (d.type != 'income' || (d.unit is string && d.unit.size() > 0))
+      && (d.type != 'expense' || d.scope in ['individual', 'general'])
+      && (d.type != 'expense' || d.category is string);
+  }
+
+  function isValidTransfer(d) {
+    return isDateString(d.date)
+      && d.amount is number && d.amount > 0
+      && d.fromMethod is string && d.fromMethod.size() > 0
+      && d.toMethod is string && d.toMethod.size() > 0
+      && d.fromMethod != d.toMethod;
+  }
+
+  function isValidRecurringPattern(d) {
+    return d.key is string && d.key.size() > 0
+      && d.status in ['pending', 'confirmed', 'dismissed'];
+  }
+}
