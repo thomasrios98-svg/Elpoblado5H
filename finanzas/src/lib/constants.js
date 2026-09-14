@@ -28,6 +28,7 @@ export const EXPENSE_CATEGORIES = [
   'Seguros',
   'Marketing',
   'Reparaciones',
+  'Marina/Muelle',
   'Otros',
 ];
 
