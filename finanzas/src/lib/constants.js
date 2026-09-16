@@ -29,6 +29,7 @@ export const EXPENSE_CATEGORIES = [
   'Marketing',
   'Reparaciones',
   'Marina/Muelle',
+  'Gasolina',
   'Otros',
 ];
 
