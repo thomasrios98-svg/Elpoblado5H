@@ -550,7 +550,7 @@ function App(){
     msg+=`💳 *Anticipo (30%): $${finalDeposit} USD*\n`;
     msg+=`\n👤 Nombre: ${nombre}\n📞 Teléfono: ${telefono}\n🪪 Cédula/Pasaporte: ${cedula}\n`;
     if(notas)msg+=`📝 Notas: ${notas}\n`;
-    msg+=`\n⚠️ *Cancelación:* Sin devoluciones. Con +24h puedes reprogramar${mode!=="apt"?". Menos de 24h pierdes la reserva":""}\n`;
+    msg+=`\n⚠️ *Cancelación:* Sin devoluciones. Con +48h puedes reprogramar con penalización de $30. Menos de 48h pierdes la reserva.\n`;
     return msg;
   };
 
@@ -920,7 +920,7 @@ function App(){
                         <strong>🧹 Normas:</strong> Dejar el apartamento ordenado y utensilios de cocina limpios<br/>
                         <strong>💧 Agua:</strong> Se recomienda llevar agua potable (el agua del complejo es solo para higiene)<br/>
                         <strong>💳 Anticipo:</strong> 30% por adelantado vía Zelle, Binance o pago móvil<br/>
-                        <strong>⚠️ Cancelación:</strong> Sin devoluciones. Con +24h puedes reprogramar
+                        <strong>⚠️ Cancelación:</strong> Sin devoluciones. Con +48h puedes reprogramar con penalización de $30
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",marginTop:14}}>
                         <button className="btn-back" onClick={()=>setAptStep(2)}>← Atrás</button>
@@ -1211,7 +1211,7 @@ function App(){
                       <div className="pol">
                         {(mode==="both")&&<span><strong>⏰ Check-in apto:</strong> 2:00pm–5:00pm · <strong>Check-out:</strong> máx 11:00am · </span>}
                         <strong>💳 Anticipo:</strong> 30% por adelantado vía Zelle, Binance o pago móvil<br/>
-                        <strong>⚠️ Cancelación:</strong> Sin devoluciones. Con +24h puedes reprogramar. Menos de 24h pierdes la reserva
+                        <strong>⚠️ Cancelación:</strong> Sin devoluciones. Con +48h puedes reprogramar con penalización de $30. Menos de 48h pierdes la reserva
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",marginTop:14}}>
                         <button className="btn-back" onClick={()=>mode==="boat"?setBoatStep(4):setBoatStep(3)}>← Atrás</button>
