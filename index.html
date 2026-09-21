@@ -446,7 +446,6 @@ function App(){
 
   // Apartment helpers
   const nights=nightsBetween(af.checkin,af.checkout);
-  const minNights=af.checkin&&af.checkin>="2026-12-20"&&af.checkin<="2027-01-10"?4:2;
   const aptTot=aptTotal(af.checkin,af.checkout);
   const aptMinStay=minStayFor(af.checkin,af.checkout);
   const aptRangeBlocked=af.checkin&&af.checkout?(()=>{
