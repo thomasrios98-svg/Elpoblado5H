@@ -144,6 +144,17 @@ const AP14="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAsICAoIBwsKC
 // ── SEASONS ──────────────────────────────────────────────────────────────────
 const PEAK=[["2026-02-28","2026-03-03"],["2026-03-29","2026-04-05"],["2026-12-29","2027-01-15"]];
 const MID=[["2026-07-01","2026-07-31"],["2026-08-01","2026-09-15"],["2026-12-15","2026-12-28"]];
+const MIN_STAY_RANGES=[["2026-12-20","2027-01-10",4]];
+function minStayFor(checkin,checkout){
+  if(!checkin||!checkout)return 2;
+  const ci=new Date(checkin+"T12:00:00").getTime(),co=new Date(checkout+"T12:00:00").getTime();
+  let m=2;
+  for(const[a,b,n]of MIN_STAY_RANGES){
+    const ra=new Date(a+"T12:00:00").getTime(),rb=new Date(b+"T12:00:00").getTime();
+    if(ci<=rb&&co>=ra)m=Math.max(m,n);
+  }
+  return m;
+}
 function getSeason(d){
   if(!d)return"low";
   const t=new Date(d+"T12:00:00").getTime();
@@ -436,6 +447,7 @@ function App(){
   // Apartment helpers
   const nights=nightsBetween(af.checkin,af.checkout);
   const aptTot=aptTotal(af.checkin,af.checkout);
+  const aptMinStay=minStayFor(af.checkin,af.checkout);
   const aptRangeBlocked=af.checkin&&af.checkout?(()=>{
     const cur=new Date(af.checkin+"T12:00:00");
     const end=new Date(af.checkout+"T12:00:00");
@@ -817,9 +829,9 @@ function App(){
                           <div className="dep">✓ Anticipo: ${Math.ceil(aptTot*.3)} USD (30%)</div>
                         </div>
                       )}
-                      {nights===1&&(
+                      {nights>0&&nights<aptMinStay&&(
                         <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:10,padding:"10px 14px",marginTop:12,fontSize:12,color:"#c2410c",fontWeight:600}}>
-                          ⚠️ El mínimo de estadía es <strong>2 noches</strong>. Por favor selecciona un checkout más tarde.
+                          ⚠️ El mínimo de estadía para estas fechas es <strong>{aptMinStay} noches</strong>. Por favor selecciona un checkout más tarde.
                         </div>
                       )}
                       {aptRangeBlocked&&(
@@ -829,7 +841,7 @@ function App(){
                       )}
                       <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
                         {mode==="both"?(
-                          <button className="btn-next" disabled={nights<2||aptRangeBlocked} onClick={()=>{
+                          <button className="btn-next" disabled={nights<aptMinStay||aptRangeBlocked} onClick={()=>{
                               setAptStep(1);
                               // Auto-select promo boat if promo active
                               if(activePromo&&!bf.boats.includes(activePromo.boat)){
@@ -839,7 +851,7 @@ function App(){
                             {selectedPromo?"Siguiente: Seleccionar lancha →":"Siguiente: Lanchas →"}
                           </button>
                         ):(
-                          <button className="btn-next" disabled={nights<2||aptRangeBlocked} onClick={()=>setAptStep(1)}>Siguiente →</button>
+                          <button className="btn-next" disabled={nights<aptMinStay||aptRangeBlocked} onClick={()=>setAptStep(1)}>Siguiente →</button>
                         )}
                       </div>
                     </div>
