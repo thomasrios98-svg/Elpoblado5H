@@ -435,6 +435,7 @@ function App(){
 
   // Apartment helpers
   const nights=nightsBetween(af.checkin,af.checkout);
+  const minNights=af.checkin&&af.checkin>="2026-12-20"&&af.checkin<="2027-01-10"?4:2;
   const aptTot=aptTotal(af.checkin,af.checkout);
   const aptRangeBlocked=af.checkin&&af.checkout?(()=>{
     const cur=new Date(af.checkin+"T12:00:00");
@@ -817,9 +818,9 @@ function App(){
                           <div className="dep">✓ Anticipo: ${Math.ceil(aptTot*.3)} USD (30%)</div>
                         </div>
                       )}
-                      {nights===1&&(
+                      {nights>0&&nights<minNights&&(
                         <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:10,padding:"10px 14px",marginTop:12,fontSize:12,color:"#c2410c",fontWeight:600}}>
-                          ⚠️ El mínimo de estadía es <strong>2 noches</strong>. Por favor selecciona un checkout más tarde.
+                          ⚠️ El mínimo de estadía es <strong>{minNights} noches</strong>. Por favor selecciona un checkout más tarde.
                         </div>
                       )}
                       {aptRangeBlocked&&(
@@ -829,7 +830,7 @@ function App(){
                       )}
                       <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
                         {mode==="both"?(
-                          <button className="btn-next" disabled={nights<2||aptRangeBlocked} onClick={()=>{
+                          <button className="btn-next" disabled={nights<minNights||aptRangeBlocked} onClick={()=>{
                               setAptStep(1);
                               // Auto-select promo boat if promo active
                               if(activePromo&&!bf.boats.includes(activePromo.boat)){
@@ -839,7 +840,7 @@ function App(){
                             {selectedPromo?"Siguiente: Seleccionar lancha →":"Siguiente: Lanchas →"}
                           </button>
                         ):(
-                          <button className="btn-next" disabled={nights<2||aptRangeBlocked} onClick={()=>setAptStep(1)}>Siguiente →</button>
+                          <button className="btn-next" disabled={nights<minNights||aptRangeBlocked} onClick={()=>setAptStep(1)}>Siguiente →</button>
                         )}
                       </div>
                     </div>
