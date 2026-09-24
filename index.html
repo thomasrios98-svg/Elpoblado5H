@@ -442,7 +442,8 @@ function App(){
   },[]);
   const ref=useRef();
 
-  const goBook=(m)=>{setMode(m);setPage("book");setAptStep(0);setBoatStep(0);setTimeout(()=>ref.current?.scrollIntoView({behavior:"smooth"}),80);};
+  const track=(ev,p={})=>{if(typeof gtag==="function")gtag("event",ev,p);};
+  const goBook=(m)=>{track("booking_started",{booking_type:m});setMode(m);setPage("book");setAptStep(0);setBoatStep(0);setTimeout(()=>ref.current?.scrollIntoView({behavior:"smooth"}),80);};
 
   // Apartment helpers
   const nights=nightsBetween(af.checkin,af.checkout);
@@ -568,6 +569,7 @@ function App(){
 
   const submit=()=>{
     const msg=buildMsg();
+    track("whatsapp_sent",{booking_type:mode,total_usd:grandTotal});
     window.open(`https://wa.me/${WA}?text=${encodeURIComponent(msg)}`,"_blank");
     setLastDep(grandDeposit);setDone(true);
   };
@@ -842,6 +844,7 @@ function App(){
                       <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
                         {mode==="both"?(
                           <button className="btn-next" disabled={nights<aptMinStay||aptRangeBlocked} onClick={()=>{
+                              track("apt_dates_confirmed",{nights,checkin:af.checkin,checkout:af.checkout});
                               setAptStep(1);
                               // Auto-select promo boat if promo active
                               if(activePromo&&!bf.boats.includes(activePromo.boat)){
@@ -851,7 +854,7 @@ function App(){
                             {selectedPromo?"Siguiente: Seleccionar lancha →":"Siguiente: Lanchas →"}
                           </button>
                         ):(
-                          <button className="btn-next" disabled={nights<aptMinStay||aptRangeBlocked} onClick={()=>setAptStep(1)}>Siguiente →</button>
+                          <button className="btn-next" disabled={nights<aptMinStay||aptRangeBlocked} onClick={()=>{track("apt_dates_confirmed",{nights,checkin:af.checkin,checkout:af.checkout});setAptStep(1);}}>Siguiente →</button>
                         )}
                       </div>
                     </div>
@@ -904,7 +907,7 @@ function App(){
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",marginTop:16}}>
                         <button className="btn-back" onClick={()=>setAptStep(1)}>← Atrás</button>
-                        <button className="btn-next" disabled={!nombre||!telefono||!cedula} onClick={()=>setAptStep(3)}>Revisar →</button>
+                        <button className="btn-next" disabled={!nombre||!telefono||!cedula} onClick={()=>{track("apt_info_submitted");setAptStep(3);}}>Revisar →</button>
                       </div>
                     </div>
                   )}
@@ -1099,7 +1102,7 @@ function App(){
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",marginTop:14}}>
                         <button className="btn-back" onClick={()=>mode==="boat"?setBoatStep(0):(setAptStep(1),setBoatStep(0))}>← Atrás</button>
-                        <button className="btn-next" disabled={!hasDates} onClick={()=>mode==="boat"?setBoatStep(2):setBoatStep(1)}>Siguiente →</button>
+                        <button className="btn-next" disabled={!hasDates} onClick={()=>{track("boat_dates_confirmed",{boats:bf.boats});mode==="boat"?setBoatStep(2):setBoatStep(1);}}>Siguiente →</button>
                       </div>
                     </div>
                   )}
@@ -1176,7 +1179,7 @@ function App(){
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",marginTop:20}}>
                         <button className="btn-back" onClick={()=>mode==="boat"?setBoatStep(3):setBoatStep(2)}>← Atrás</button>
-                        <button className="btn-next" disabled={!nombre||!telefono||!cedula} onClick={()=>mode==="boat"?setBoatStep(5):setBoatStep(4)}>Revisar →</button>
+                        <button className="btn-next" disabled={!nombre||!telefono||!cedula} onClick={()=>{track("apt_info_submitted");mode==="boat"?setBoatStep(5):setBoatStep(4);}}>Revisar →</button>
                       </div>
                     </div>
                   )}
