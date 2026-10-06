@@ -94,6 +94,49 @@
   }
 ]
 </script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Dónde está ubicado El Poblado 5H?",
+      "acceptedAnswer": {"@type": "Answer", "text": "El apartamento está en el conjunto residencial El Poblado (El Retiro), en Tucacas, Estado Falcón, Venezuela, a 10-15 minutos del muelle de acceso al Parque Nacional Morrocoy."}
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cuántas personas puede alojar el apartamento vacacional en Tucacas?",
+      "acceptedAnswer": {"@type": "Answer", "text": "El apartamento tiene capacidad para hasta 7 personas. Cuenta con 3 aires acondicionados, WiFi, planta eléctrica, agua caliente, piscina y balcón con parrillera."}
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cómo reservo el apartamento o el alquiler de lancha en Morrocoy?",
+      "acceptedAnswer": {"@type": "Answer", "text": "Puedes verificar disponibilidad y hacer tu reserva directamente en elpoblado5h.com. El sistema muestra fechas disponibles en tiempo real. La reserva se confirma por WhatsApp con un depósito del 30%."}
+    },
+    {
+      "@type": "Question",
+      "name": "¿Qué lanchas tienen disponibles para alquilar en Tucacas?",
+      "acceptedAnswer": {"@type": "Answer", "text": "Ofrecemos dos opciones: Lancha Kichi con capacidad para 7 personas, y Yamaha SX230 con capacidad para 9 personas. Las tarifas varían según la temporada y el día de la semana."}
+    },
+    {
+      "@type": "Question",
+      "name": "¿A qué cayos de Morrocoy puedo ir en lancha desde Tucacas?",
+      "acceptedAnswer": {"@type": "Answer", "text": "Desde Tucacas puedes visitar los principales cayos del Parque Nacional Morrocoy: Cayo Sombrero, Cayo Pescadores, Cayo Alemán, Los Juanes, Playa Sur, Tucupido, Boca Seca y más. Puedes visitar hasta 4 cayos en un día."}
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cuántas noches mínimo puedo reservar la estadía en Morrocoy?",
+      "acceptedAnswer": {"@type": "Answer", "text": "El mínimo general es 2 noches. Durante la temporada alta del 20 de diciembre al 10 de enero, el mínimo es de 4 noches."}
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cuál es la política de cancelación?",
+      "acceptedAnswer": {"@type": "Answer", "text": "No se realizan devoluciones del depósito. Si avisas con más de 48 horas de anticipación, puedes reprogramar tu estadía con una penalización de $30. Si avisas con menos de 48 horas, pierdes la reserva."}
+    }
+  ]
+}
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js'"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js'"></script>
@@ -448,6 +491,32 @@ function AptGallery(){
 // ── MAIN APP ─────────────────────────────────────────────────────────────────
 const AF0={checkin:"",checkout:"",nombre:"",telefono:"",cedula:"",notas:""};
 const BF0={boats:[],pax:{kichi:2,yamaha:2},dates:{kichi:[],yamaha:[]},cayos:[],extras:[]};
+
+
+function FAQSection(){
+  const [open,setOpen]=React.useState(null);
+  const items=[
+    ["¿Dónde está ubicado El Poblado 5H?","El apartamento está en el conjunto residencial El Poblado (El Retiro), en Tucacas, Estado Falcón, Venezuela, a 10-15 minutos del muelle de acceso al Parque Nacional Morrocoy. Es el punto de partida ideal para explorar los cayos."],
+    ["¿Cuántas personas puede alojar el apartamento?","El apartamento tiene capacidad para hasta 7 personas. Cuenta con 3 aires acondicionados de consola, WiFi, planta eléctrica, agua caliente, piscina y balcón con parrillera."],
+    ["¿Cómo reservo el apartamento o la lancha?","Puedes verificar disponibilidad y hacer tu reserva directamente en elpoblado5h.com. El sistema muestra fechas disponibles en tiempo real y calcula el precio automáticamente. La reserva se confirma por WhatsApp con un depósito del 30%."],
+    ["¿Qué lanchas tienen disponibles para Morrocoy?","Ofrecemos dos opciones para recorrer los cayos de Morrocoy:\n\nLancha Kichi — capacidad para 7 personas.\nYamaha SX230 — capacidad para 9 personas.\n\nLas tarifas varían según la temporada y el día de la semana. Consulta disponibilidad en la página."],
+    ["¿A qué cayos de Morrocoy puedo ir en lancha?","Desde Tucacas puedes visitar los principales cayos del Parque Nacional Morrocoy: Cayo Sombrero, Cayo Pescadores, Cayo Alemán, Los Juanes, Playa Sur, Tucupido, Boca Seca y más. Dependiendo de tu grupo y el tiempo disponible, puedes visitar hasta 4 cayos en un día."],
+    ["¿Cuántas noches mínimo puedo reservar el apartamento?","El mínimo general es 2 noches. Durante la temporada alta del 20 de diciembre al 10 de enero, el mínimo es de 4 noches."],
+    ["¿Cuál es la política de cancelación?","No se realizan devoluciones del depósito. Si avisas con más de 48 horas de anticipación, puedes reprogramar tu estadía con una penalización de $30. Si avisas con menos de 48 horas, pierdes la reserva."]
+  ];
+  return React.createElement("div",{style:{border:"1px solid #e2e8f0",borderRadius:14,overflow:"hidden",background:"#fff"}},
+    items.map(([q,a],i)=>React.createElement("div",{key:i,style:{borderBottom:i<items.length-1?"1px solid #e2e8f0":"none"}},
+      React.createElement("button",{
+        onClick:()=>setOpen(open===i?null:i),
+        style:{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:"18px 20px",background:open===i?"#f0f9ff":"none",border:"none",cursor:"pointer",textAlign:"left",color:"#0f172a",fontFamily:"Lato,sans-serif",fontSize:"0.95rem",fontWeight:600,lineHeight:1.4}
+      },
+        React.createElement("span",null,q),
+        React.createElement("span",{style:{flexShrink:0,width:22,height:22,borderRadius:"50%",background:open===i?"#0ea5e9":"#e0f2fe",color:open===i?"#fff":"#0ea5e9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:400,transform:open===i?"rotate(45deg)":"none",transition:"transform .2s"}},"+")
+      ),
+      open===i&&React.createElement("div",{style:{padding:"0 20px 18px",fontSize:"0.88rem",color:"#64748b",lineHeight:1.65,background:"#f0f9ff",whiteSpace:"pre-line"}},a)
+    ))
+  );
+}
 
 function App(){
   const[page,setPage]=useState("home");
@@ -1313,6 +1382,16 @@ function App(){
           </div>
         )}
       </div>
+
+
+      <section style={{background:"#f8fafc",padding:"48px 0"}}>
+        <div style={{maxWidth:720,margin:"0 auto",padding:"0 20px"}}>
+          <p style={{fontSize:11,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",color:"#0ea5e9",marginBottom:8}}>Preguntas frecuentes</p>
+          <h2 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"clamp(1.8rem,4vw,2.4rem)",color:"#0c4a6e",margin:"0 0 8px",lineHeight:1.1}}>Todo lo que necesitas saber</h2>
+          <p style={{color:"#64748b",fontSize:".9rem",marginBottom:32}}>Sobre el apartamento vacacional y el alquiler de lanchas en Morrocoy, Tucacas.</p>
+          <FAQSection/>
+        </div>
+      </section>
 
       <footer>
         <strong style={{color:"#fff"}}>El Poblado 5H</strong> · Morrocoy, Venezuela<br/>
