@@ -709,6 +709,15 @@ function App(){
     return msg;
   };
 
+  const isDesktop=()=>!/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  const submitEmail=()=>{
+    const msg=buildMsg();
+    track("email_sent",{booking_type:mode,total_usd:grandTotal});
+    const subject=encodeURIComponent("Reserva El Poblado 5H");
+    const body=encodeURIComponent(msg);
+    window.open(`mailto:elpoblado5h@gmail.com?subject=${subject}&body=${body}`,"_blank");
+    setLastDep(grandDeposit);setDone(true);
+  };
   const submit=()=>{
     const msg=buildMsg();
     track("whatsapp_sent",{booking_type:mode,total_usd:grandTotal});
@@ -1083,6 +1092,7 @@ function App(){
                         <button className="btn-back" onClick={()=>setAptStep(2)}>← Atrás</button>
                         <button className="btn-wa" onClick={submit}>Enviar por WhatsApp 💬</button>
                       </div>
+                      {isDesktop()&&<div style={{textAlign:"center",marginTop:10}}><span style={{fontSize:12,color:"#94a3b8"}}>¿No tienes WhatsApp? </span><button onClick={submitEmail} style={{fontSize:12,color:"#0ea5e9",background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>Enviar por email</button></div>}
                     </div>
                   )}
                 </div>
@@ -1374,6 +1384,7 @@ function App(){
                         <button className="btn-back" onClick={()=>mode==="boat"?setBoatStep(4):setBoatStep(3)}>← Atrás</button>
                         <button className="btn-wa" onClick={submit}>Enviar por WhatsApp 💬</button>
                       </div>
+                      {isDesktop()&&<div style={{textAlign:"center",marginTop:10}}><span style={{fontSize:12,color:"#94a3b8"}}>¿No tienes WhatsApp? </span><button onClick={submitEmail} style={{fontSize:12,color:"#0ea5e9",background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>Enviar por email</button></div>}
                     </div>
                   )}
                 </div>
