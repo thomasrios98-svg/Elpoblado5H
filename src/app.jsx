@@ -352,6 +352,15 @@ function App(){
     if(typeof fbq==="function"){FB_EVENTS[ev]?fbq("track",FB_EVENTS[ev],p):fbq("trackCustom",ev,p);}
   };
   const goBook=(m)=>{track("booking_started",{booking_type:m});setMode(m);setPage("book");setAptStep(0);setBoatStep(0);setTimeout(()=>ref.current?.scrollIntoView({behavior:"smooth"}),80);};
+  // Service pages link to /#reservar-apartamento, /#reservar-lancha or /#reservar-combo to open the wizard directly.
+  useEffect(()=>{
+    const m={"#reservar-apartamento":"apt","#reservar-lancha":"boat","#reservar-combo":"both"}[location.hash];
+    if(!m)return;
+    goBook(m);
+    // goBook's smooth scroll gets lost while the page is still loading; jump again once it has.
+    const go=()=>setTimeout(()=>ref.current?.scrollIntoView(),100);
+    if(document.readyState==="complete")go();else window.addEventListener("load",go,{once:true});
+  },[]);
 
   // Apartment helpers
   const nights=nightsBetween(af.checkin,af.checkout);
@@ -559,6 +568,7 @@ function App(){
               <div className="tags" style={{marginTop:10}}>
                 {["Cocina equipada","3 A/C","WiFi y TV","Piscina","Jardín","Estacionamiento","Balcón + Parrillera","Mascotas ✓","Planta eléctrica","Vigilancia 24h","Lavadora","Secadora","Agua caliente"].map(f=><span key={f} className="tag">{f}</span>)}
               </div>
+              <a href="/apartamento-tucacas-morrocoy/" style={{display:"block",marginTop:10,fontSize:12,fontWeight:700,color:"#0369a1",textDecoration:"none"}}>Ver fotos, precios y detalles del apartamento →</a>
               <button onClick={()=>goBook("apt")} style={{marginTop:14,width:"100%",padding:"11px",borderRadius:50,border:"none",background:"linear-gradient(135deg,#0369a1,#0ea5e9)",color:"#fff",fontFamily:"Lato,sans-serif",fontWeight:900,fontSize:13,cursor:"pointer"}}>Reservar apartamento →</button>
             </div>
           </div>
@@ -575,6 +585,7 @@ function App(){
                 <a href="https://share.google/HGGOvNkPUME60DJV6" target="_blank" className="tag" style={{textDecoration:"none",color:"#0369a1"}}>📍 Ver ubicación en Maps</a>
                 {["9:30am–5:30pm","Marino incluido","Salvavidas","Toldo","Equipo de sonido","WiFi Starlink (extra)"].map(f=><span key={f} className="tag">{f}</span>)}
               </div>
+              <a href="/alquiler-lancha-morrocoy/" style={{display:"block",marginTop:10,fontSize:12,fontWeight:700,color:"#0369a1",textDecoration:"none"}}>Ver lanchas, tarifas y cayos →</a>
               <button onClick={()=>goBook("boat")} style={{marginTop:14,width:"100%",padding:"11px",borderRadius:50,border:"none",background:"linear-gradient(135deg,#0369a1,#0ea5e9)",color:"#fff",fontFamily:"Lato,sans-serif",fontWeight:900,fontSize:13,cursor:"pointer"}}>Reservar lanchas →</button>
             </div>
           </div>
@@ -1182,6 +1193,10 @@ function App(){
           &nbsp;·&nbsp;
           <a href="https://wa.me/584148255103" onClick={()=>track("whatsapp_click",{location:"footer"})} style={{color:"#34d399",textDecoration:"none"}}>📞 +58 414-825 5103</a>
         </span>
+        <nav style={{marginTop:8,display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap"}}>
+          <a href="/apartamento-tucacas-morrocoy/">Apartamento en Tucacas</a>
+          <a href="/alquiler-lancha-morrocoy/">Alquiler de lancha en Morrocoy</a>
+        </nav>
       </footer>
     </div>
   );
