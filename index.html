@@ -24,6 +24,23 @@
   gtag('js', new Date());
   gtag('config', 'G-57EWNSC0J5');
 </script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1087870434004014');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1087870434004014&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 <script type="application/ld+json">
 [
   {
@@ -584,7 +601,12 @@ function App(){
   },[]);
   const ref=useRef();
 
-  const track=(ev,p={})=>{if(typeof gtag==="function")gtag("event",ev,p);};
+  // GA4 event names mapped to Meta Pixel standard events; the rest go as custom events.
+  const FB_EVENTS={booking_started:"InitiateCheckout",whatsapp_sent:"Lead",whatsapp_click:"Contact"};
+  const track=(ev,p={})=>{
+    if(typeof gtag==="function")gtag("event",ev,p);
+    if(typeof fbq==="function"){FB_EVENTS[ev]?fbq("track",FB_EVENTS[ev],p):fbq("trackCustom",ev,p);}
+  };
   const goBook=(m)=>{track("booking_started",{booking_type:m});setMode(m);setPage("book");setAptStep(0);setBoatStep(0);setTimeout(()=>ref.current?.scrollIntoView({behavior:"smooth"}),80);};
 
   // Apartment helpers
