@@ -1193,6 +1193,7 @@ function App(){
           &nbsp;·&nbsp;
           <a href="https://wa.me/584148255103" onClick={()=>track("whatsapp_click",{location:"footer"})} style={{color:"#34d399",textDecoration:"none"}}>📞 +58 414-825 5103</a>
         </span>
+        <div style={{marginTop:6}}>⭐ 4,7 en Google · <a href="https://search.google.com/local/writereview?placeid=ChIJe1QkCxoTgY4RKc-exyBLHPE" target="_blank" rel="noopener" onClick={()=>track("review_click",{location:"footer"})}>Deja tu reseña</a></div>
         <nav style={{marginTop:8,display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap"}}>
           <a href="/apartamento-tucacas-morrocoy/">Apartamento en Tucacas</a>
           <a href="/alquiler-lancha-morrocoy/">Alquiler de lancha en Morrocoy</a>
