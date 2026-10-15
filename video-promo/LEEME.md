@@ -9,3 +9,5 @@
 Todo el contenido está dentro de la zona segura de Instagram (recorte 4:5 del feed y menús de Reels).
 
 Al publicar: agrega música desde Instagram/TikTok al 10–15 % de volumen para que no tape la voz.
+| `ElPoblado5H_tour_videos_reales.mp4` | Reel "tour del apartamento" (30 s) con videos reales del apartamento. Recomendado. |
+| `ElPoblado5H_tour_apartamento.mp4` | Reel "tour del apartamento" (21 s) hecho solo con fotos. |
