@@ -602,7 +602,7 @@ function App(){
   const ref=useRef();
 
   // GA4 event names mapped to Meta Pixel standard events; the rest go as custom events.
-  const FB_EVENTS={booking_started:"InitiateCheckout",whatsapp_sent:"Lead",whatsapp_click:"Contact"};
+  const FB_EVENTS={booking_started:"InitiateCheckout",whatsapp_sent:"Lead",email_sent:"Lead",whatsapp_click:"Contact"};
   const track=(ev,p={})=>{
     if(typeof gtag==="function")gtag("event",ev,p);
     if(typeof fbq==="function"){FB_EVENTS[ev]?fbq("track",FB_EVENTS[ev],p):fbq("trackCustom",ev,p);}
@@ -735,7 +735,7 @@ function App(){
   const isDesktop=()=>!/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
   const submitEmail=()=>{
     const msg=buildMsg();
-    track("email_sent",{booking_type:mode,total_usd:grandTotal});
+    track("email_sent",{booking_type:mode,total_usd:grandTotal,value:grandTotal,currency:"USD"});
     const subject=encodeURIComponent("Reserva El Poblado 5H");
     const body=encodeURIComponent(msg);
     window.open(`mailto:elpoblado5h@gmail.com?subject=${subject}&body=${body}`,"_blank");
