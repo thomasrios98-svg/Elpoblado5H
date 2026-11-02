@@ -289,6 +289,7 @@ function App(){
   const[aptPax,setAptPax]=useState(2);
   const[boatPax,setBoatPax]=useState(2);
   const[pendingDates,setPendingDates]=useState([]);
+  const[dateBoatMap,setDateBoatMap]=useState({});
   const[selectedPromo,setSelectedPromo]=useState(null); // null | "kichi" | "yamaha"
   const[extraAptNights,setExtraAptNights]=useState(0);
   const[extraBoatDates,setExtraBoatDates]=useState({kichi:[],yamaha:[]});
@@ -353,7 +354,7 @@ function App(){
     if(typeof gtag==="function")gtag("event",ev,p);
     if(typeof fbq==="function"){FB_EVENTS[ev]?fbq("track",FB_EVENTS[ev],p):fbq("trackCustom",ev,p);}
   };
-  const goBook=(m)=>{track("booking_started",{booking_type:m});setMode(m);setPage("book");setAptStep(0);setBoatStep(0);setBoatPax(2);setPendingDates([]);setTimeout(()=>ref.current?.scrollIntoView({behavior:"smooth"}),80);};
+  const goBook=(m)=>{track("booking_started",{booking_type:m});setMode(m);setPage("book");setAptStep(0);setBoatStep(0);setBoatPax(2);setPendingDates([]);setDateBoatMap({});setTimeout(()=>ref.current?.scrollIntoView({behavior:"smooth"}),80);};
   // Service pages link to /#reservar-apartamento, /#reservar-lancha or /#reservar-combo to open the wizard directly.
   useEffect(()=>{
     const m={"#reservar-apartamento":"apt","#reservar-lancha":"boat","#reservar-combo":"both"}[location.hash];
@@ -530,7 +531,7 @@ function App(){
         <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:11,padding:"11px 14px",marginBottom:24,textAlign:"left"}}>
           <p style={{fontSize:11,color:"#92400e",lineHeight:1.7}}>⚠️ Recuerda pagar el <strong>30% de anticipo (${lastDep} USD)</strong> para confirmar vía Zelle, Binance o pago móvil.</p>
         </div>
-        <button onClick={()=>{setDone(false);setPage("home");setMode(null);setAf({...AF0});setAptPax(2);setSelectedPromo(null);setExtraAptNights(0);setExtraBoatDates({kichi:[],yamaha:[]});setBf({...BF0,pax:{kichi:2,yamaha:2},dates:{kichi:[],yamaha:[]}});setNombre("");setTelefono("");setCedula("");setNotas("");setAptStep(0);setBoatStep(0);setBoatPax(2);setPendingDates([]);}} style={{background:"linear-gradient(135deg,#0369a1,#0ea5e9)",color:"#fff",border:"none",borderRadius:50,padding:"13px 32px",fontSize:14,fontFamily:"Lato,sans-serif",fontWeight:900,cursor:"pointer"}}>Hacer otra reserva</button>
+        <button onClick={()=>{setDone(false);setPage("home");setMode(null);setAf({...AF0});setAptPax(2);setSelectedPromo(null);setExtraAptNights(0);setExtraBoatDates({kichi:[],yamaha:[]});setBf({...BF0,pax:{kichi:2,yamaha:2},dates:{kichi:[],yamaha:[]}});setNombre("");setTelefono("");setCedula("");setNotas("");setAptStep(0);setBoatStep(0);setBoatPax(2);setPendingDates([]);setDateBoatMap({});}} style={{background:"linear-gradient(135deg,#0369a1,#0ea5e9)",color:"#fff",border:"none",borderRadius:50,padding:"13px 32px",fontSize:14,fontFamily:"Lato,sans-serif",fontWeight:900,cursor:"pointer"}}>Hacer otra reserva</button>
       </div>
     </div>
   );
@@ -983,43 +984,53 @@ function App(){
                     </div>
                   )}
 
-                  {/* Boat step 2: boat selection (boat-only) */}
-                  {boatStep===2&&mode==="boat"&&(
-                    <div>
-                      <div className="ftitle bb">Elige la lancha</div>
-                      <div className="fsub">{pendingDates.length} día{pendingDates.length!==1?"s":""} · {boatPax} persona{boatPax!==1?"s":""}</div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:8,marginTop:14}}>
-                        {Object.values(BOATS).map(b=>{
-                          const fits=b.capacity>=boatPax;
-                          const booked=[...(BOOKED[b.id]||[]),...(gcBooked[b.id]||[])];
-                          const availDates=pendingDates.filter(d=>!booked.includes(d));
-                          const avail=fits&&availDates.length>0;
-                          const partial=avail&&availDates.length<pendingDates.length;
-                          const tot=availDates.reduce((s,ds)=>{const pr=b.price(ds,boatPax);return s+(pr?pr.p:0);},0);
-                          return(
-                            <div key={b.id} className={`bsel${!avail?" dis":""}`}
-                              onClick={()=>{if(!avail)return;setBf(f=>({...f,boats:[b.id],pax:{...f.pax,[b.id]:boatPax},dates:{...f.dates,[b.id]:availDates}}));setBoatStep(3);}}
-                              style={{position:"relative",cursor:avail?"pointer":"not-allowed",opacity:avail?1:.5}}>
-                              {!fits&&<div style={{position:"absolute",top:5,right:7,fontSize:9,color:"#ef4444",fontWeight:700,zIndex:2}}>INSUF. CAPACIDAD</div>}
-                              {fits&&!avail&&<div style={{position:"absolute",top:5,right:7,fontSize:9,color:"#ef4444",fontWeight:700,zIndex:2}}>NO DISPONIBLE</div>}
-                              {partial&&<div style={{position:"absolute",top:5,right:7,fontSize:9,color:"#f59e0b",fontWeight:700,zIndex:2}}>{availDates.length}/{pendingDates.length} DÍAS LIBRES</div>}
-                              <img src={sm(b.img)} alt={b.name}/>
-                              <div className="bsel-body">
-                                <div className="bb" style={{fontSize:18,color:"#0f172a"}}>{b.name}</div>
-                                <div style={{fontSize:10,color:"#94a3b8",fontWeight:700,letterSpacing:.5,marginBottom:4}}>{b.capacity} pax máx</div>
-                                {avail&&tot>0&&<div className="bb" style={{fontSize:20,color:"#0369a1"}}>${tot} <span style={{fontFamily:"Lato,sans-serif",fontSize:11,color:"#64748b",fontWeight:400}}>USD</span></div>}
-                                {partial&&<div style={{fontSize:10,color:"#f59e0b",marginTop:2}}>Solo {availDates.length} día{availDates.length!==1?"s":""} disponible{availDates.length!==1?"s":""}</div>}
-                                <button type="button" style={{marginTop:6,width:"100%",padding:"6px",borderRadius:8,border:"1px solid #0ea5e9",background:"#f0f9ff",color:"#0369a1",fontWeight:700}} onClick={(e)=>{e.stopPropagation();if(b.id==="yamaha"){window.showYamahaGallery&&window.showYamahaGallery();}else{window.showKichiGallery&&window.showKichiGallery();}}}>Ver fotos</button>
+                  {/* Boat step 2: asignar lancha por día (boat-only) */}
+                  {boatStep===2&&mode==="boat"&&(()=>{
+                    const allAssigned=pendingDates.every(d=>dateBoatMap[d]);
+                    const confirmStep2=()=>{
+                      const kichiDs=pendingDates.filter(d=>dateBoatMap[d]==="kichi");
+                      const yamahaDs=pendingDates.filter(d=>dateBoatMap[d]==="yamaha");
+                      const usedBoats=[...(kichiDs.length?["kichi"]:[]),...(yamahaDs.length?["yamaha"]:[])];
+                      setBf(f=>({...f,boats:usedBoats,pax:{...f.pax,...(kichiDs.length?{kichi:boatPax}:{}),...(yamahaDs.length?{yamaha:boatPax}:{})},dates:{kichi:kichiDs,yamaha:yamahaDs}}));
+                      setBoatStep(3);
+                    };
+                    return(
+                      <div>
+                        <div className="ftitle bb">¿Qué lancha cada día?</div>
+                        <div className="fsub">{boatPax} persona{boatPax!==1?"s":""} · elige una lancha por día</div>
+                        <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:12}}>
+                          {pendingDates.map(ds=>(
+                            <div key={ds} style={{border:"1.5px solid #e2e8f0",borderRadius:12,overflow:"hidden"}}>
+                              <div style={{background:"#f8fafc",padding:"8px 14px",fontSize:12,fontWeight:700,color:"#0c4a6e",borderBottom:"1px solid #e2e8f0"}}>{fmt(ds)} <span style={{fontSize:10,color:SC[getSeason(ds)],fontWeight:700}}>· {SL[getSeason(ds)]}</span></div>
+                              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0}}>
+                                {Object.values(BOATS).map((b,bi)=>{
+                                  const fits=b.capacity>=boatPax;
+                                  const booked=[...(BOOKED[b.id]||[]),...(gcBooked[b.id]||[])];
+                                  const avail=fits&&!booked.includes(ds);
+                                  const pr=avail?b.price(ds,boatPax):null;
+                                  const sel=dateBoatMap[ds]===b.id;
+                                  return(
+                                    <div key={b.id}
+                                      onClick={()=>avail&&setDateBoatMap(m=>({...m,[ds]:sel?undefined:b.id}))}
+                                      style={{padding:"10px 12px",cursor:avail?"pointer":"not-allowed",opacity:avail?1:.4,background:sel?"#e0f2fe":"#fff",borderLeft:bi>0?"1px solid #e2e8f0":"none",borderTop:"none",display:"flex",flexDirection:"column",gap:2,position:"relative"}}>
+                                      {sel&&<div style={{position:"absolute",top:6,right:8,width:16,height:16,borderRadius:"50%",background:"#0ea5e9",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700}}>✓</div>}
+                                      <div style={{fontWeight:700,fontSize:13,color:"#0f172a"}}>{b.name}</div>
+                                      <div style={{fontSize:10,color:"#94a3b8"}}>{b.capacity} pax</div>
+                                      {avail&&pr?<div style={{fontWeight:900,fontSize:15,color:"#0369a1"}}>${pr.p}</div>:<div style={{fontSize:10,color:"#ef4444",fontWeight:700}}>No disponible</div>}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
-                          );
-                        })}
+                          ))}
+                        </div>
+                        <div style={{display:"flex",justifyContent:"space-between",marginTop:14}}>
+                          <button className="btn-back" onClick={()=>{setDateBoatMap({});setBf(f=>({...f,boats:[],dates:{kichi:[],yamaha:[]}}));setBoatStep(1);}}>← Atrás</button>
+                          <button className="btn-next" disabled={!allAssigned} onClick={confirmStep2}>Siguiente →</button>
+                        </div>
                       </div>
-                      <div style={{display:"flex",justifyContent:"space-between",marginTop:8}}>
-                        <button className="btn-back" onClick={()=>{setBf(f=>({...f,boats:[],dates:{kichi:[],yamaha:[]}}));setBoatStep(1);}}>← Atrás</button>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Boat step 0 (both mode): per-boat dates */}
                   {boatStep===0&&mode==="both"&&(
