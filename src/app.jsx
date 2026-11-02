@@ -1012,11 +1012,14 @@ function App(){
                                   return(
                                     <div key={b.id}
                                       onClick={()=>avail&&setDateBoatMap(m=>({...m,[ds]:sel?undefined:b.id}))}
-                                      style={{padding:"10px 12px",cursor:avail?"pointer":"not-allowed",opacity:avail?1:.4,background:sel?"#e0f2fe":"#fff",borderLeft:bi>0?"1px solid #e2e8f0":"none",borderTop:"none",display:"flex",flexDirection:"column",gap:2,position:"relative"}}>
-                                      {sel&&<div style={{position:"absolute",top:6,right:8,width:16,height:16,borderRadius:"50%",background:"#0ea5e9",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700}}>✓</div>}
-                                      <div style={{fontWeight:700,fontSize:13,color:"#0f172a"}}>{b.name}</div>
-                                      <div style={{fontSize:10,color:"#94a3b8"}}>{b.capacity} pax</div>
-                                      {avail&&pr?<div style={{fontWeight:900,fontSize:15,color:"#0369a1"}}>${pr.p}</div>:<div style={{fontSize:10,color:"#ef4444",fontWeight:700}}>No disponible</div>}
+                                      style={{cursor:avail?"pointer":"not-allowed",opacity:avail?1:.4,background:sel?"#e0f2fe":"#fff",borderLeft:bi>0?"1px solid #e2e8f0":"none",display:"flex",flexDirection:"column",position:"relative"}}>
+                                      {sel&&<div style={{position:"absolute",top:6,right:8,zIndex:2,width:18,height:18,borderRadius:"50%",background:"#0ea5e9",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700}}>✓</div>}
+                                      <img src={sm(b.img)} alt={b.name} style={{width:"100%",height:80,objectFit:"cover",display:"block",filter:avail?"none":"grayscale(1)"}}/>
+                                      <div style={{padding:"8px 10px",display:"flex",flexDirection:"column",gap:2}}>
+                                        <div style={{fontWeight:700,fontSize:12,color:"#0f172a"}}>{b.name}</div>
+                                        <div style={{fontSize:10,color:"#94a3b8"}}>{b.capacity} pax máx</div>
+                                        {avail&&pr?<div style={{fontWeight:900,fontSize:14,color:"#0369a1"}}>${pr.p}</div>:<div style={{fontSize:10,color:"#ef4444",fontWeight:700}}>No disponible</div>}
+                                      </div>
                                     </div>
                                   );
                                 })}
