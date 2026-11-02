@@ -43,8 +43,8 @@ function getSeason(d){
   for(const[a,b]of MID)if(t>=new Date(a).getTime()&&t<=new Date(b+"T23:59:59").getTime())return"mid";
   return"low";
 }
-const SC={peak:"#dc2626",mid:"#d97706",low:"#0ea5e9"};
-const SL={peak:"🔴 Alta",mid:"🟡 Media",low:"🟢 Baja"};
+const SC={peak:"#b8860b",mid:"#d97706",low:"#0ea5e9"};
+const SL={peak:"⭐ Alta",mid:"🟡 Media",low:"🟢 Baja"};
 function wifiPrice(d){return getSeason(d)==="peak"?50:25;}
 
 // ── APARTMENT PRICING ────────────────────────────────────────────────────────
