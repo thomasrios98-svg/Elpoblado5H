@@ -318,6 +318,7 @@ function App(){
           const title=(ev.summary||"").toLowerCase();
           const startD=(ev.start?.date||ev.start?.dateTime||"").slice(0,10);
           if(!startD)return;
+          if(/aceite|mantenim|cambio|recordatorio/.test(title))return;
           if(title.includes("kichi")||title.includes("yamaha")){
             const rawEnd=ev.end?.date||(ev.end?.dateTime||"").slice(0,10);
             if(!rawEnd)return;
