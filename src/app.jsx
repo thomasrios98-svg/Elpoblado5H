@@ -3,6 +3,10 @@ const WA="584148255103";
 const IK="/img/kichi.webp",IY="/img/yamaha.webp",IH="/img/hero.webp",IL="/img/logo.webp";
 const IA1="/img/apartamento-portada.webp";
 const sm=u=>u.replace(/\.webp$/,"-sm.webp"); // 480px thumbnail of each photo
+const BOAT_PHOTOS={
+  kichi:["/img/kichi.webp","/img/kichi-2.webp","/img/kichi-3.webp"],
+  yamaha:["/img/yamaha.webp","/img/yamaha-1.webp","/img/yamaha-2.webp","/img/yamaha-3.webp","/img/yamaha-4.webp"],
+};
 const AP1="/img/apartamento-01.webp";
 const AP2="/img/apartamento-02.webp";
 const AP3="/img/apartamento-03.webp";
@@ -250,6 +254,34 @@ function AptGallery(){
 }
 
 
+function BoatViewer({boatId,start,onClose}){
+  const photos=BOAT_PHOTOS[boatId]||[];
+  const[cur,setCur]=useState(start||0);
+  const tx=useRef(null);
+  const go=(d)=>setCur(c=>(c+d+photos.length)%photos.length);
+  useEffect(()=>{
+    const k=(e)=>{if(e.key==="Escape")onClose();if(e.key==="ArrowLeft")go(-1);if(e.key==="ArrowRight")go(1);};
+    window.addEventListener("keydown",k);return()=>window.removeEventListener("keydown",k);
+  },[]);
+  const btn={position:"absolute",top:"50%",transform:"translateY(-50%)",background:"rgba(255,255,255,.2)",border:"none",color:"#fff",width:40,height:40,borderRadius:"50%",cursor:"pointer",fontSize:20,zIndex:10};
+  return(
+    <div onClick={onClose}
+      onTouchStart={e=>{tx.current=e.touches[0].clientX;}}
+      onTouchEnd={e=>{if(tx.current==null)return;const dx=e.changedTouches[0].clientX-tx.current;tx.current=null;if(Math.abs(dx)>50)go(dx<0?1:-1);}}
+      style={{position:"fixed",inset:0,background:"rgba(0,0,0,.94)",zIndex:9999,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+      <button onClick={(e)=>{e.stopPropagation();onClose();}} style={{position:"absolute",top:12,right:12,background:"rgba(255,255,255,.15)",border:"none",color:"#fff",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:13,zIndex:10}}>✕ Cerrar</button>
+      <div style={{position:"absolute",top:16,left:16,color:"#fff",fontWeight:700,fontSize:14,letterSpacing:1}}>{BOATS[boatId].name}</div>
+      {photos.length>1&&<button onClick={(e)=>{e.stopPropagation();go(-1);}} style={{...btn,left:12}}>‹</button>}
+      <img src={photos[cur]} alt={BOATS[boatId].name+" – foto "+(cur+1)} style={{maxWidth:"94vw",maxHeight:"78vh",objectFit:"contain",borderRadius:8}} onClick={e=>e.stopPropagation()}/>
+      {photos.length>1&&<button onClick={(e)=>{e.stopPropagation();go(1);}} style={{...btn,right:12}}>›</button>}
+      <div style={{display:"flex",gap:6,marginTop:14,maxWidth:"94vw",overflowX:"auto"}} onClick={e=>e.stopPropagation()}>
+        {photos.map((p,i)=><img key={i} src={sm(p)} alt="" onClick={()=>setCur(i)} style={{width:54,height:54,objectFit:"cover",borderRadius:6,cursor:"pointer",flexShrink:0,opacity:i===cur?1:.45,border:i===cur?"2px solid #0ea5e9":"2px solid transparent"}}/>)}
+      </div>
+      <div style={{marginTop:8,color:"rgba(255,255,255,.6)",fontSize:12}}>{cur+1} / {photos.length}</div>
+    </div>
+  );
+}
+
 // ── MAIN APP ─────────────────────────────────────────────────────────────────
 const AF0={checkin:"",checkout:"",nombre:"",telefono:"",cedula:"",notas:""};
 const BF0={boats:[],pax:{kichi:2,yamaha:2},dates:{kichi:[],yamaha:[]},cayos:[],extras:[]};
@@ -288,6 +320,7 @@ function App(){
   const[ciMode,setCiMode]=useState("ci"); // "ci" or "co"
   const[aptPax,setAptPax]=useState(2);
   const[boatPax,setBoatPax]=useState(2);
+  const[boatGal,setBoatGal]=useState(null);
   const[pendingDates,setPendingDates]=useState([]);
   const[dateBoatMap,setDateBoatMap]=useState({});
   const[selectedPromo,setSelectedPromo]=useState(null); // null | "kichi" | "yamaha"
@@ -997,6 +1030,7 @@ function App(){
                     };
                     return(
                       <div>
+                        {boatGal&&<BoatViewer boatId={boatGal} start={0} onClose={()=>setBoatGal(null)}/>}
                         <div className="ftitle bb">{pendingDates.length===1?"¿Qué lancha prefieres?":"¿Qué lancha cada día?"}</div>
                         <div className="fsub">{boatPax} persona{boatPax!==1?"s":""} · {pendingDates.length===1?"elige tu lancha":"elige una lancha por día"}</div>
                         <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:12}}>
@@ -1015,7 +1049,10 @@ function App(){
                                       onClick={()=>avail&&setDateBoatMap(m=>({...m,[ds]:sel?undefined:b.id}))}
                                       style={{cursor:avail?"pointer":"not-allowed",opacity:avail?1:.4,background:sel?"#e0f2fe":"#fff",borderLeft:bi>0?"1px solid #e2e8f0":"none",display:"flex",flexDirection:"column",position:"relative"}}>
                                       {sel&&<div style={{position:"absolute",top:6,right:8,zIndex:2,width:18,height:18,borderRadius:"50%",background:"#0ea5e9",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700}}>✓</div>}
-                                      <img src={sm(b.img)} alt={b.name} style={{width:"100%",height:80,objectFit:"cover",display:"block",filter:avail?"none":"grayscale(1)"}}/>
+                                      <div style={{position:"relative"}}>
+                                        <img src={sm(b.img)} alt={b.name} style={{width:"100%",height:80,objectFit:"cover",display:"block",filter:avail?"none":"grayscale(1)"}}/>
+                                        <button onClick={(e)=>{e.stopPropagation();setBoatGal(b.id);}} style={{position:"absolute",left:6,bottom:6,background:"rgba(0,0,0,.65)",color:"#fff",border:"none",borderRadius:50,padding:"3px 9px",fontSize:10,fontWeight:700,cursor:"pointer"}}>📷 {BOAT_PHOTOS[b.id].length} fotos</button>
+                                      </div>
                                       <div style={{padding:"8px 10px",display:"flex",flexDirection:"column",gap:2}}>
                                         <div style={{fontWeight:700,fontSize:12,color:"#0f172a"}}>{b.name}</div>
                                         <div style={{fontSize:10,color:"#94a3b8"}}>{b.capacity} pax máx</div>
