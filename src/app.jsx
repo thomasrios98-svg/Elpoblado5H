@@ -992,19 +992,23 @@ function App(){
                         {Object.values(BOATS).map(b=>{
                           const fits=b.capacity>=boatPax;
                           const booked=[...(BOOKED[b.id]||[]),...(gcBooked[b.id]||[])];
-                          const avail=fits&&!pendingDates.some(d=>booked.includes(d));
-                          const tot=pendingDates.reduce((s,ds)=>{const pr=b.price(ds,boatPax);return s+(pr?pr.p:0);},0);
+                          const availDates=pendingDates.filter(d=>!booked.includes(d));
+                          const avail=fits&&availDates.length>0;
+                          const partial=avail&&availDates.length<pendingDates.length;
+                          const tot=availDates.reduce((s,ds)=>{const pr=b.price(ds,boatPax);return s+(pr?pr.p:0);},0);
                           return(
                             <div key={b.id} className={`bsel${!avail?" dis":""}`}
-                              onClick={()=>{if(!avail)return;setBf(f=>({...f,boats:[b.id],pax:{...f.pax,[b.id]:boatPax},dates:{...f.dates,[b.id]:[...pendingDates]}}));setBoatStep(3);}}
+                              onClick={()=>{if(!avail)return;setBf(f=>({...f,boats:[b.id],pax:{...f.pax,[b.id]:boatPax},dates:{...f.dates,[b.id]:availDates}}));setBoatStep(3);}}
                               style={{position:"relative",cursor:avail?"pointer":"not-allowed",opacity:avail?1:.5}}>
                               {!fits&&<div style={{position:"absolute",top:5,right:7,fontSize:9,color:"#ef4444",fontWeight:700,zIndex:2}}>INSUF. CAPACIDAD</div>}
                               {fits&&!avail&&<div style={{position:"absolute",top:5,right:7,fontSize:9,color:"#ef4444",fontWeight:700,zIndex:2}}>NO DISPONIBLE</div>}
+                              {partial&&<div style={{position:"absolute",top:5,right:7,fontSize:9,color:"#f59e0b",fontWeight:700,zIndex:2}}>{availDates.length}/{pendingDates.length} DÍAS LIBRES</div>}
                               <img src={sm(b.img)} alt={b.name}/>
                               <div className="bsel-body">
                                 <div className="bb" style={{fontSize:18,color:"#0f172a"}}>{b.name}</div>
                                 <div style={{fontSize:10,color:"#94a3b8",fontWeight:700,letterSpacing:.5,marginBottom:4}}>{b.capacity} pax máx</div>
                                 {avail&&tot>0&&<div className="bb" style={{fontSize:20,color:"#0369a1"}}>${tot} <span style={{fontFamily:"Lato,sans-serif",fontSize:11,color:"#64748b",fontWeight:400}}>USD</span></div>}
+                                {partial&&<div style={{fontSize:10,color:"#f59e0b",marginTop:2}}>Solo {availDates.length} día{availDates.length!==1?"s":""} disponible{availDates.length!==1?"s":""}</div>}
                                 <button type="button" style={{marginTop:6,width:"100%",padding:"6px",borderRadius:8,border:"1px solid #0ea5e9",background:"#f0f9ff",color:"#0369a1",fontWeight:700}} onClick={(e)=>{e.stopPropagation();if(b.id==="yamaha"){window.showYamahaGallery&&window.showYamahaGallery();}else{window.showKichiGallery&&window.showKichiGallery();}}}>Ver fotos</button>
                               </div>
                             </div>
