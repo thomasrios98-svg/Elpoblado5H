@@ -997,8 +997,8 @@ function App(){
                     };
                     return(
                       <div>
-                        <div className="ftitle bb">¿Qué lancha cada día?</div>
-                        <div className="fsub">{boatPax} persona{boatPax!==1?"s":""} · elige una lancha por día</div>
+                        <div className="ftitle bb">{pendingDates.length===1?"¿Qué lancha prefieres?":"¿Qué lancha cada día?"}</div>
+                        <div className="fsub">{boatPax} persona{boatPax!==1?"s":""} · {pendingDates.length===1?"elige tu lancha":"elige una lancha por día"}</div>
                         <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:12}}>
                           {pendingDates.map(ds=>(
                             <div key={ds} style={{border:"1.5px solid #e2e8f0",borderRadius:12,overflow:"hidden"}}>
