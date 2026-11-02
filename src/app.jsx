@@ -125,7 +125,7 @@ const fmt=(s)=>s?new Date(s+"T12:00:00").toLocaleDateString("es-VE",{weekday:"sh
 const fmtL=(s)=>s?new Date(s+"T12:00:00").toLocaleDateString("es-VE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"";
 
 // ── CALENDAR ─────────────────────────────────────────────────────────────────
-function Cal({boatId,sel,onToggle,checkinMode,checkin,checkout,onDayClick,promoLowOnly=false,priceFor,gcBooked={}}){
+function Cal({boatId,blockedDates,sel,onToggle,checkinMode,checkin,checkout,onDayClick,promoLowOnly=false,priceFor,gcBooked={}}){
   const td=new Date();
   const[vY,setVY]=useState(td.getFullYear());
   const[vM,setVM]=useState(td.getMonth());
@@ -161,7 +161,7 @@ function Cal({boatId,sel,onToggle,checkinMode,checkin,checkout,onDayClick,promoL
           maxDate.setDate(maxDate.getDate()+90);
           const maxDs=maxDate.toISOString().slice(0,10);
           const beyondLimit=ds>maxDs;
-          const blk=boatId?(BOOKED[boatId]?.includes(ds)||gcBooked[boatId]?.includes(ds)):(BOOKED.apt?.includes(ds)||gcBooked.apt?.includes(ds));
+          const blk=blockedDates?blockedDates.includes(ds):boatId?(BOOKED[boatId]?.includes(ds)||gcBooked[boatId]?.includes(ds)):(BOOKED.apt?.includes(ds)||gcBooked.apt?.includes(ds));
           const inRange=isInRange(ds);
           const isci=isCI(ds),isco=isCO(ds);
           const s=sel?sel.includes(ds):false;
@@ -287,6 +287,8 @@ function App(){
   const[af,setAf]=useState({...AF0});
   const[ciMode,setCiMode]=useState("ci"); // "ci" or "co"
   const[aptPax,setAptPax]=useState(2);
+  const[boatPax,setBoatPax]=useState(2);
+  const[pendingDates,setPendingDates]=useState([]);
   const[selectedPromo,setSelectedPromo]=useState(null); // null | "kichi" | "yamaha"
   const[extraAptNights,setExtraAptNights]=useState(0);
   const[extraBoatDates,setExtraBoatDates]=useState({kichi:[],yamaha:[]});
@@ -351,7 +353,7 @@ function App(){
     if(typeof gtag==="function")gtag("event",ev,p);
     if(typeof fbq==="function"){FB_EVENTS[ev]?fbq("track",FB_EVENTS[ev],p):fbq("trackCustom",ev,p);}
   };
-  const goBook=(m)=>{track("booking_started",{booking_type:m});setMode(m);setPage("book");setAptStep(0);setBoatStep(0);setTimeout(()=>ref.current?.scrollIntoView({behavior:"smooth"}),80);};
+  const goBook=(m)=>{track("booking_started",{booking_type:m});setMode(m);setPage("book");setAptStep(0);setBoatStep(0);setBoatPax(2);setPendingDates([]);setTimeout(()=>ref.current?.scrollIntoView({behavior:"smooth"}),80);};
   // Service pages link to /#reservar-apartamento, /#reservar-lancha or /#reservar-combo to open the wizard directly.
   useEffect(()=>{
     const m={"#reservar-apartamento":"apt","#reservar-lancha":"boat","#reservar-combo":"both"}[location.hash];
@@ -383,6 +385,10 @@ function App(){
   const togCayo=(c)=>setBf(f=>{if(f.cayos.includes(c))return{...f,cayos:f.cayos.filter(x=>x!==c)};if(f.cayos.length>=4)return f;return{...f,cayos:[...f.cayos,c]};});
   const togExt=(id)=>setBf(f=>({...f,extras:f.extras.includes(id)?f.extras.filter(x=>x!==id):[...f.extras,id]}));
   const setPax=(bid,v)=>setBf(f=>({...f,pax:{...f.pax,[bid]:v}}));
+  const kichiBlkDates=[...(BOOKED.kichi||[]),...(gcBooked.kichi||[])];
+  const yamahaBlkDates=[...(BOOKED.yamaha||[]),...(gcBooked.yamaha||[])];
+  const sharedBlocked=boatPax>7?[...new Set(yamahaBlkDates)]:[...new Set([...kichiBlkDates,...yamahaBlkDates])].filter(d=>kichiBlkDates.includes(d)&&yamahaBlkDates.includes(d));
+  const togPending=(ds)=>setPendingDates(pd=>pd.includes(ds)?pd.filter(x=>x!==ds):[...pd,ds].sort());
 
   const allDates=[...new Set([...(bf.dates.kichi||[]),...(bf.dates.yamaha||[])])];
   const maxWifi=allDates.length>0?Math.max(...allDates.map(d=>wifiPrice(d))):25;
@@ -505,11 +511,11 @@ function App(){
   // "both" mode: aptStep 0-1 first, then boatStep 0-4, then confirm
   const isAptPhase=mode==="apt"||(mode==="both"&&aptStep<2);
   const isBoatPhase=mode==="boat"||(mode==="both"&&aptStep>=2);
-  const showConfirm=(mode==="apt"&&aptStep===3)||(mode==="boat"&&boatStep===5)||(mode==="both"&&boatStep===5);
+  const showConfirm=(mode==="apt"&&aptStep===3)||(mode==="boat"&&boatStep===6)||(mode==="both"&&boatStep===4);
 
   // Steps labels per mode
   const aptStepLabels=["Fechas","Lancha","Datos","Confirmar"];
-  const boatStepLabels=["Lanchas","Fechas","Cayos","Extras","Confirmar"];
+  const boatStepLabels=["Personas","Fecha","Lancha","Cayos","Extras","Confirmar"];
   const bothStepLabels=["Apto: Fechas","Lanchas","Fechas","Cayos","Extras","Confirmar"];
 
   const stepLabels=mode==="apt"?[...aptStepLabels,"✓"]:mode==="boat"?boatStepLabels:bothStepLabels;
@@ -524,7 +530,7 @@ function App(){
         <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:11,padding:"11px 14px",marginBottom:24,textAlign:"left"}}>
           <p style={{fontSize:11,color:"#92400e",lineHeight:1.7}}>⚠️ Recuerda pagar el <strong>30% de anticipo (${lastDep} USD)</strong> para confirmar vía Zelle, Binance o pago móvil.</p>
         </div>
-        <button onClick={()=>{setDone(false);setPage("home");setMode(null);setAf({...AF0});setAptPax(2);setSelectedPromo(null);setExtraAptNights(0);setExtraBoatDates({kichi:[],yamaha:[]});setBf({...BF0,pax:{kichi:2,yamaha:2},dates:{kichi:[],yamaha:[]}});setNombre("");setTelefono("");setCedula("");setNotas("");setAptStep(0);setBoatStep(0);}} style={{background:"linear-gradient(135deg,#0369a1,#0ea5e9)",color:"#fff",border:"none",borderRadius:50,padding:"13px 32px",fontSize:14,fontFamily:"Lato,sans-serif",fontWeight:900,cursor:"pointer"}}>Hacer otra reserva</button>
+        <button onClick={()=>{setDone(false);setPage("home");setMode(null);setAf({...AF0});setAptPax(2);setSelectedPromo(null);setExtraAptNights(0);setExtraBoatDates({kichi:[],yamaha:[]});setBf({...BF0,pax:{kichi:2,yamaha:2},dates:{kichi:[],yamaha:[]}});setNombre("");setTelefono("");setCedula("");setNotas("");setAptStep(0);setBoatStep(0);setBoatPax(2);setPendingDates([]);}} style={{background:"linear-gradient(135deg,#0369a1,#0ea5e9)",color:"#fff",border:"none",borderRadius:50,padding:"13px 32px",fontSize:14,fontFamily:"Lato,sans-serif",fontWeight:900,cursor:"pointer"}}>Hacer otra reserva</button>
       </div>
     </div>
   );
@@ -941,52 +947,78 @@ function App(){
               {/* ═══ BOAT STEPS (both mode uses aptStep>=2) ═══ */}
               {(mode==="boat"||(mode==="both"&&aptStep>=2))&&(
                 <div>
-                  {/* Boat step 0: select boats (only for boat-only mode) */}
+                  {/* Boat step 0: personas (boat-only) */}
                   {boatStep===0&&mode==="boat"&&(
                     <div>
-                      <div className="ftitle bb">Elige las lanchas</div>
-                      <div className="fsub">Puedes seleccionar una o ambas.</div>
-                      <div style={{fontSize:10,color:"#94a3b8",marginTop:2,marginBottom:8}}>Precios desde temporada baja (lunes a jueves).</div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
+                      <div className="ftitle bb">¿Cuántas personas van?</div>
+                      <div className="fsub">Incluye adultos y niños.</div>
+                      <div className="pax-c" style={{marginTop:18,marginBottom:16}}>
+                        <button className="pb" onClick={()=>setBoatPax(p=>Math.max(1,p-1))}>−</button>
+                        <span className="pn">{boatPax}</span>
+                        <button className="pb" onClick={()=>setBoatPax(p=>Math.min(9,p+1))}>+</button>
+                        <span style={{fontSize:11,color:"#94a3b8",marginLeft:6}}>máx 9</span>
+                      </div>
+                      {boatPax>7&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:11,color:"#92400e"}}>⚓ Para {boatPax} personas solo la Yamaha SX230 tiene capacidad (9 pax máx).</div>}
+                      <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}>
+                        <button className="btn-next" onClick={()=>setBoatStep(1)}>Siguiente →</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Boat step 1: date picker (boat-only) */}
+                  {boatStep===1&&mode==="boat"&&(
+                    <div>
+                      <div className="ftitle bb">¿Cuándo van?</div>
+                      <div className="fsub">Selecciona el día o los días del paseo.</div>
+                      <Cal blockedDates={sharedBlocked} sel={pendingDates} onToggle={togPending} gcBooked={gcBooked}/>
+                      {pendingDates.length>0&&(
+                        <div style={{padding:"8px 12px",background:"#f8fafc",border:"1.5px solid #bae6fd",borderRadius:10,marginTop:8}}>
+                          {pendingDates.map(ds=><span key={ds} className="chip" style={{background:SC[getSeason(ds)]}} onClick={()=>togPending(ds)}>{fmt(ds)} {SL[getSeason(ds)].split(" ")[0]} ✕</span>)}
+                        </div>
+                      )}
+                      <div style={{display:"flex",justifyContent:"space-between",marginTop:14}}>
+                        <button className="btn-back" onClick={()=>{setPendingDates([]);setBoatStep(0);}}>← Atrás</button>
+                        <button className="btn-next" disabled={pendingDates.length===0} onClick={()=>setBoatStep(2)}>Siguiente →</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Boat step 2: boat selection (boat-only) */}
+                  {boatStep===2&&mode==="boat"&&(
+                    <div>
+                      <div className="ftitle bb">Elige la lancha</div>
+                      <div className="fsub">{pendingDates.length} día{pendingDates.length!==1?"s":""} · {boatPax} persona{boatPax!==1?"s":""}</div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:8,marginTop:14}}>
                         {Object.values(BOATS).map(b=>{
-                          const on=bf.boats.includes(b.id);
+                          const fits=b.capacity>=boatPax;
+                          const booked=[...(BOOKED[b.id]||[]),...(gcBooked[b.id]||[])];
+                          const avail=fits&&!pendingDates.some(d=>booked.includes(d));
+                          const tot=pendingDates.reduce((s,ds)=>{const pr=b.price(ds,boatPax);return s+(pr?pr.p:0);},0);
                           return(
-                            <div key={b.id} className={`bsel${on?" on":""}`} onClick={()=>togBoat(b.id)} style={{position:"relative"}}>
-                              {on&&<div className="bcheck">✓</div>}
+                            <div key={b.id} className={`bsel${!avail?" dis":""}`}
+                              onClick={()=>{if(!avail)return;setBf(f=>({...f,boats:[b.id],pax:{...f.pax,[b.id]:boatPax},dates:{...f.dates,[b.id]:[...pendingDates]}}));setBoatStep(3);}}
+                              style={{position:"relative",cursor:avail?"pointer":"not-allowed",opacity:avail?1:.5}}>
+                              {!fits&&<div style={{position:"absolute",top:5,right:7,fontSize:9,color:"#ef4444",fontWeight:700,zIndex:2}}>INSUF. CAPACIDAD</div>}
+                              {fits&&!avail&&<div style={{position:"absolute",top:5,right:7,fontSize:9,color:"#ef4444",fontWeight:700,zIndex:2}}>NO DISPONIBLE</div>}
                               <img src={sm(b.img)} alt={b.name}/>
                               <div className="bsel-body">
                                 <div className="bb" style={{fontSize:18,color:"#0f172a"}}>{b.name}</div>
-                                <div style={{fontSize:10,color:"#94a3b8",fontWeight:700,letterSpacing:.5,marginBottom:4}}>{b.subtitle}</div>
-                                <div className="bb" style={{fontSize:20,color:"#0369a1"}}><span style={{fontFamily:"Lato,sans-serif",fontSize:11,color:"#64748b",fontWeight:400}}>Desde </span>${b.price("2026-06-09",2)?.p}</div>
-                                <div style={{fontSize:10,color:"#64748b"}}>{b.capacity} pax máx</div>
+                                <div style={{fontSize:10,color:"#94a3b8",fontWeight:700,letterSpacing:.5,marginBottom:4}}>{b.capacity} pax máx</div>
+                                {avail&&tot>0&&<div className="bb" style={{fontSize:20,color:"#0369a1"}}>${tot} <span style={{fontFamily:"Lato,sans-serif",fontSize:11,color:"#64748b",fontWeight:400}}>USD</span></div>}
                                 <button type="button" style={{marginTop:6,width:"100%",padding:"6px",borderRadius:8,border:"1px solid #0ea5e9",background:"#f0f9ff",color:"#0369a1",fontWeight:700}} onClick={(e)=>{e.stopPropagation();if(b.id==="yamaha"){window.showYamahaGallery&&window.showYamahaGallery();}else{window.showKichiGallery&&window.showKichiGallery();}}}>Ver fotos</button>
                               </div>
                             </div>
                           );
                         })}
                       </div>
-                      {bf.boats.map(bid=>{
-                        const b=BOATS[bid];
-                        return(
-                          <div key={bid} style={{marginBottom:12}}>
-                            <label className="lbl">Personas en {b.name}</label>
-                            <div className="pax-c">
-                              <button className="pb" onClick={()=>setPax(bid,Math.max(1,bf.pax[bid]-1))}>−</button>
-                              <span className="pn">{bf.pax[bid]}</span>
-                              <button className="pb" onClick={()=>setPax(bid,Math.min(b.capacity,bf.pax[bid]+1))}>+</button>
-                              <span style={{fontSize:11,color:"#94a3b8",marginLeft:6}}>máx {b.capacity}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}>
-                        <button className="btn-next" disabled={bf.boats.length===0} onClick={()=>setBoatStep(1)}>Siguiente →</button>
+                      <div style={{display:"flex",justifyContent:"space-between",marginTop:8}}>
+                        <button className="btn-back" onClick={()=>{setBf(f=>({...f,boats:[],dates:{kichi:[],yamaha:[]}}));setBoatStep(1);}}>← Atrás</button>
                       </div>
                     </div>
                   )}
 
-                  {/* Boat step 1: dates */}
-                  {((boatStep===1&&mode==="boat")||(boatStep===0&&mode==="both"))&&(
+                  {/* Boat step 0 (both mode): per-boat dates */}
+                  {boatStep===0&&mode==="both"&&(
                     <div>
                       <div className="ftitle bb">Fechas de las lanchas</div>
                       <div className="fsub">Elige los días para cada lancha.</div>
@@ -1031,14 +1063,14 @@ function App(){
                         </div>
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",marginTop:14}}>
-                        <button className="btn-back" onClick={()=>mode==="boat"?setBoatStep(0):(setAptStep(1),setBoatStep(0))}>← Atrás</button>
-                        <button className="btn-next" disabled={!hasDates} onClick={()=>{track("boat_dates_confirmed",{boats:bf.boats});mode==="boat"?setBoatStep(2):setBoatStep(1);}}>Siguiente →</button>
+                        <button className="btn-back" onClick={()=>{setAptStep(1);setBoatStep(0);}}>← Atrás</button>
+                        <button className="btn-next" disabled={!hasDates} onClick={()=>{track("boat_dates_confirmed",{boats:bf.boats});setBoatStep(1);}}>Siguiente →</button>
                       </div>
                     </div>
                   )}
 
-                  {/* Boat step 2: cayos */}
-                  {((boatStep===2&&mode==="boat")||(boatStep===1&&mode==="both"))&&(
+                  {/* Boat step 3 (boat) / 1 (both): cayos */}
+                  {((boatStep===3&&mode==="boat")||(boatStep===1&&mode==="both"))&&(
                     <div>
                       <div className="ftitle bb">Elige los cayos</div>
                       <div className="fsub">Opcional · Hasta 4 cayos por salida.</div>
@@ -1052,14 +1084,14 @@ function App(){
                       {bf.cayos.length>0&&<div style={{background:"#f0f9ff",border:"1.5px solid #bae6fd",borderRadius:10,padding:"10px 14px",marginBottom:10}}><div style={{fontSize:9,color:"#0369a1",fontWeight:900,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Tu ruta</div><div style={{display:"flex",flexWrap:"wrap",gap:3,alignItems:"center"}}>{bf.cayos.map((c,i)=><span key={c} style={{fontSize:12,color:"#0c4a6e",fontWeight:700}}>{i>0&&<span style={{color:"#0ea5e9",margin:"0 3px"}}>→</span>}{c}</span>)}</div></div>}
                       {bf.cayos.length===0&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:10,padding:"10px 14px",marginBottom:10,fontSize:11,color:"#92400e"}}>⚓ Si no seleccionas cayos, podrás escogerlos el día del paseo con el marino.</div>}
                       <div style={{display:"flex",justifyContent:"space-between",marginTop:14}}>
-                        <button className="btn-back" onClick={()=>mode==="boat"?setBoatStep(1):setBoatStep(0)}>← Atrás</button>
-                        <button className="btn-next" onClick={()=>{track("boat_cayos_selected",{booking_type:mode,cayos:bf.cayos.length});mode==="boat"?setBoatStep(3):setBoatStep(2);}}>Siguiente →</button>
+                        <button className="btn-back" onClick={()=>mode==="boat"?setBoatStep(2):setBoatStep(0)}>← Atrás</button>
+                        <button className="btn-next" onClick={()=>{track("boat_cayos_selected",{booking_type:mode,cayos:bf.cayos.length});mode==="boat"?setBoatStep(4):setBoatStep(2);}}>Siguiente →</button>
                       </div>
                     </div>
                   )}
 
-                  {/* Boat step 3: extras */}
-                  {((boatStep===3&&mode==="boat")||(boatStep===2&&mode==="both"))&&(
+                  {/* Boat step 4 (boat) / 2 (both): extras */}
+                  {((boatStep===4&&mode==="boat")||(boatStep===2&&mode==="both"))&&(
                     <div>
                       <div className="ftitle bb">Servicios adicionales</div>
                       <div className="fsub">Opcionales para las lanchas.</div>
@@ -1090,14 +1122,14 @@ function App(){
                         <div className="dep">✓ Anticipo: ${grandDeposit} USD (30%)</div>
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",marginTop:8}}>
-                        <button className="btn-back" onClick={()=>mode==="boat"?setBoatStep(2):setBoatStep(1)}>← Atrás</button>
-                        <button className="btn-next" onClick={()=>{track("boat_extras_selected",{booking_type:mode,extras:bf.extras.length});mode==="boat"?setBoatStep(4):setBoatStep(3);}}>Siguiente →</button>
+                        <button className="btn-back" onClick={()=>mode==="boat"?setBoatStep(3):setBoatStep(1)}>← Atrás</button>
+                        <button className="btn-next" onClick={()=>{track("boat_extras_selected",{booking_type:mode,extras:bf.extras.length});mode==="boat"?setBoatStep(5):setBoatStep(3);}}>Siguiente →</button>
                       </div>
                     </div>
                   )}
 
-                  {/* Step 4: datos (boat-only) */}
-                  {((boatStep===4&&mode==="boat")||(boatStep===3&&mode==="both"))&&(
+                  {/* Step 5 (boat) / 3 (both): datos */}
+                  {((boatStep===5&&mode==="boat")||(boatStep===3&&mode==="both"))&&(
                     <div>
                       <div className="ftitle bb">Tus datos</div>
                       <div className="fsub">Para confirmar tu reserva.</div>
@@ -1108,14 +1140,14 @@ function App(){
                         <div><label className="lbl">Notas adicionales</label><input className="inp" placeholder="Celebraciones, solicitudes especiales..." value={notas} onChange={e=>setNotas(e.target.value)}/></div>
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",marginTop:20}}>
-                        <button className="btn-back" onClick={()=>mode==="boat"?setBoatStep(3):setBoatStep(2)}>← Atrás</button>
-                        <button className="btn-next" disabled={!nombre||!telefono} onClick={()=>{track("apt_info_submitted",{booking_type:mode});mode==="boat"?setBoatStep(5):setBoatStep(4);}}>Revisar →</button>
+                        <button className="btn-back" onClick={()=>mode==="boat"?setBoatStep(4):setBoatStep(2)}>← Atrás</button>
+                        <button className="btn-next" disabled={!nombre||!telefono} onClick={()=>{track("apt_info_submitted",{booking_type:mode});mode==="boat"?setBoatStep(6):setBoatStep(4);}}>Revisar →</button>
                       </div>
                     </div>
                   )}
 
-                  {/* Step 5: confirm */}
-                  {((boatStep===5&&mode==="boat")||(boatStep===4&&mode==="both"))&&(
+                  {/* Step 6 (boat) / 4 (both): confirm */}
+                  {((boatStep===6&&mode==="boat")||(boatStep===4&&mode==="both"))&&(
                     <div>
                       <div className="ftitle bb">Revisa tu reserva</div>
                       <div className="fsub">Confirma antes de enviar por WhatsApp.</div>
@@ -1159,7 +1191,7 @@ function App(){
                         <strong>⚠️ Cancelación:</strong> Sin devoluciones. Con +48h puedes reprogramar con penalización de $30. Menos de 48h pierdes la reserva
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",marginTop:14}}>
-                        <button className="btn-back" onClick={()=>mode==="boat"?setBoatStep(4):setBoatStep(3)}>← Atrás</button>
+                        <button className="btn-back" onClick={()=>mode==="boat"?setBoatStep(5):setBoatStep(3)}>← Atrás</button>
                         <button className="btn-wa" onClick={submit}>Enviar por WhatsApp 💬</button>
                       </div>
                       {isDesktop()&&<div style={{textAlign:"center",marginTop:10}}><span style={{fontSize:12,color:"#94a3b8"}}>¿No tienes WhatsApp? </span><button onClick={submitEmail} style={{fontSize:12,color:"#0ea5e9",background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>Enviar por email</button></div>}
