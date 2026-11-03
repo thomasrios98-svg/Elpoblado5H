@@ -422,7 +422,10 @@ function App(){
   const setPax=(bid,v)=>setBf(f=>({...f,pax:{...f.pax,[bid]:v}}));
   const kichiBlkDates=[...(BOOKED.kichi||[]),...(gcBooked.kichi||[])];
   const yamahaBlkDates=[...(BOOKED.yamaha||[]),...(gcBooked.yamaha||[])];
-  const sharedBlocked=boatPax>7?[...new Set(yamahaBlkDates)]:[...new Set([...kichiBlkDates,...yamahaBlkDates])].filter(d=>kichiBlkDates.includes(d)&&yamahaBlkDates.includes(d));
+  const isCombo=boatPax>9;
+  const comboKichi=Math.min(BOATS.kichi.capacity,Math.floor(boatPax/2));
+  const comboYamaha=boatPax-comboKichi;
+  const sharedBlocked=isCombo?[...new Set([...kichiBlkDates,...yamahaBlkDates])]:boatPax>7?[...new Set(yamahaBlkDates)]:[...new Set([...kichiBlkDates,...yamahaBlkDates])].filter(d=>kichiBlkDates.includes(d)&&yamahaBlkDates.includes(d));
   const togPending=(ds)=>setPendingDates(pd=>pd.includes(ds)?pd.filter(x=>x!==ds):[...pd,ds].sort());
 
   const allDates=[...new Set([...(bf.dates.kichi||[]),...(bf.dates.yamaha||[])])];
@@ -990,10 +993,11 @@ function App(){
                       <div className="pax-c" style={{marginTop:18,marginBottom:16}}>
                         <button className="pb" onClick={()=>setBoatPax(p=>Math.max(1,p-1))}>−</button>
                         <span className="pn">{boatPax}</span>
-                        <button className="pb" onClick={()=>setBoatPax(p=>Math.min(9,p+1))}>+</button>
-                        <span style={{fontSize:11,color:"#94a3b8",marginLeft:6}}>máx 9</span>
+                        <button className="pb" onClick={()=>setBoatPax(p=>Math.min(16,p+1))}>+</button>
+                        <span style={{fontSize:11,color:"#94a3b8",marginLeft:6}}>máx 16</span>
                       </div>
-                      {boatPax>7&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:11,color:"#92400e"}}>⚓ Para {boatPax} personas solo la Yamaha SX230 tiene capacidad (9 pax máx).</div>}
+                      {isCombo&&<div style={{background:"#f0f9ff",border:"1.5px solid #bae6fd",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:11,color:"#0c4a6e"}}>🚤🚤 Para {boatPax} personas te ofrecemos alquilar <strong>las 2 lanchas juntas</strong>: Kichi ({comboKichi} pax) + Yamaha SX230 ({comboYamaha} pax), el mismo día.</div>}
+                      {boatPax>7&&boatPax<=9&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:11,color:"#92400e"}}>⚓ Para {boatPax} personas solo la Yamaha SX230 tiene capacidad (9 pax máx).</div>}
                       <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}>
                         <button className="btn-next" onClick={()=>setBoatStep(1)}>Siguiente →</button>
                       </div>
@@ -1020,6 +1024,49 @@ function App(){
 
                   {/* Boat step 2: asignar lancha por día (boat-only) */}
                   {boatStep===2&&mode==="boat"&&(()=>{
+                    if(isCombo){
+                      const comboPr=(ds)=>{if(kichiBlkDates.includes(ds)||yamahaBlkDates.includes(ds))return null;const a=BOATS.kichi.price(ds,comboKichi),b=BOATS.yamaha.price(ds,comboYamaha);return a&&b?a.p+b.p:null;};
+                      const confirmCombo=()=>{
+                        setBf(f=>({...f,boats:["kichi","yamaha"],pax:{...f.pax,kichi:comboKichi,yamaha:comboYamaha},dates:{kichi:[...pendingDates],yamaha:[...pendingDates]}}));
+                        setBoatStep(3);
+                      };
+                      return(
+                        <div>
+                          {boatGal&&<BoatViewer boatId={boatGal} start={0} onClose={()=>setBoatGal(null)}/>}
+                          <div className="ftitle bb">Las 2 lanchas juntas</div>
+                          <div className="fsub">{boatPax} personas · Kichi ({comboKichi}) + Yamaha SX230 ({comboYamaha})</div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:14}}>
+                            {Object.values(BOATS).map(b=>(
+                              <div key={b.id} style={{border:"1.5px solid #bae6fd",borderRadius:12,overflow:"hidden",background:"#e0f2fe"}}>
+                                <div style={{position:"relative"}}>
+                                  <img src={sm(b.img)} alt={b.name} style={{width:"100%",height:80,objectFit:"cover",display:"block"}}/>
+                                  <button onClick={()=>setBoatGal(b.id)} style={{position:"absolute",left:6,bottom:6,background:"rgba(0,0,0,.65)",color:"#fff",border:"none",borderRadius:50,padding:"3px 9px",fontSize:10,fontWeight:700,cursor:"pointer"}}>📷 {BOAT_PHOTOS[b.id].length} fotos</button>
+                                </div>
+                                <div style={{padding:"8px 10px"}}>
+                                  <div style={{fontWeight:700,fontSize:12,color:"#0f172a"}}>{b.name}</div>
+                                  <div style={{fontSize:10,color:"#64748b"}}>{b.id==="kichi"?comboKichi:comboYamaha} personas</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:8}}>
+                            {pendingDates.map(ds=>{
+                              const t=comboPr(ds);
+                              return(
+                                <div key={ds} style={{border:"1.5px solid #e2e8f0",borderRadius:12,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",opacity:t?1:.5}}>
+                                  <div style={{fontSize:12,fontWeight:700,color:"#0c4a6e"}}>{fmt(ds)} <span style={{fontSize:10,color:SC[getSeason(ds)]}}>· {SL[getSeason(ds)]}</span></div>
+                                  {t?<div style={{fontWeight:900,fontSize:15,color:"#0369a1"}}>${t}</div>:<div style={{fontSize:10,color:"#ef4444",fontWeight:700}}>No disponible</div>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div style={{display:"flex",justifyContent:"space-between",marginTop:14}}>
+                            <button className="btn-back" onClick={()=>{setDateBoatMap({});setBf(f=>({...f,boats:[],dates:{kichi:[],yamaha:[]}}));setBoatStep(1);}}>← Atrás</button>
+                            <button className="btn-next" disabled={pendingDates.some(d=>!comboPr(d))} onClick={confirmCombo}>Siguiente →</button>
+                          </div>
+                        </div>
+                      );
+                    }
                     const allAssigned=pendingDates.every(d=>dateBoatMap[d]);
                     const confirmStep2=()=>{
                       const kichiDs=pendingDates.filter(d=>dateBoatMap[d]==="kichi");
