@@ -431,9 +431,10 @@ function App(){
   const allDates=[...new Set([...(bf.dates.kichi||[]),...(bf.dates.yamaha||[])])];
   const maxWifi=allDates.length>0?Math.max(...allDates.map(d=>wifiPrice(d))):25;
   const wifiUnavail=allDates.some(d=>NO_WIFI.includes(d));
-  const dynExtras=[{id:"wifi",label:"WiFi Starlink",price:maxWifi,icon:"📶"},{id:"cava",label:"Cava con Hielo",price:10,icon:"🧊"}];
+  const boatDays=bf.boats.reduce((s,bid)=>s+(bf.dates[bid]||[]).length,0);
+  const dynExtras=[{id:"wifi",label:"WiFi Starlink",price:maxWifi,icon:"📶",qty:allDates.length},{id:"cava",label:"Cava con Hielo",price:10,icon:"🧊",qty:boatDays}];
   const boatTotal=bf.boats.reduce((s,bid)=>{const b=BOATS[bid];return s+(bf.dates[bid]||[]).reduce((ss,ds)=>{const pr=b.price(ds,bf.pax[bid]);return ss+(pr?pr.p:0);},0);},0);
-  const eTotal=bf.extras.reduce((s,id)=>{if(id==="wifi"&&wifiUnavail)return s;const e=dynExtras.find(x=>x.id===id);return s+(e?e.price*allDates.length:0);},0);
+  const eTotal=bf.extras.reduce((s,id)=>{if(id==="wifi"&&wifiUnavail)return s;const e=dynExtras.find(x=>x.id===id);return s+(e?e.price*e.qty:0);},0);
   const boatTot=boatTotal+eTotal;
   const grandTotal=(mode==="apt"?aptTot:0)+(mode==="boat"?boatTot:0)+(mode==="both"?aptTot+boatTot:0);
   const grandDeposit=Math.ceil(grandTotal*.3);
@@ -510,7 +511,7 @@ function App(){
       if(bf.cayos.length)msg+=`🏝 Cayos: ${bf.cayos.join(", ")}\n`;
       else msg+=`🏝 Cayos: Los escogeré el día del paseo con el marino\n`;
       const ae=bf.extras.filter(id=>!(id==="wifi"&&wifiUnavail));
-      if(ae.length)msg+=`➕ Extras: ${dynExtras.filter(e=>ae.includes(e.id)).map(e=>`${e.label} ($${e.price*allDates.length})`).join(", ")}\n`;
+      if(ae.length)msg+=`➕ Extras: ${dynExtras.filter(e=>ae.includes(e.id)).map(e=>`${e.label}${e.qty>1?` ×${e.qty}`:""} ($${e.price*e.qty})`).join(", ")}\n`;
       if(!activePromo) msg+=`💰 Total lanchas: $${boatTot} USD\n`;
     }
     if(activePromo){
@@ -1201,7 +1202,7 @@ function App(){
                         {dynExtras.map(e=>{const isWifi=e.id==="wifi",unavail=isWifi&&wifiUnavail,on=bf.extras.includes(e.id);return(
                           <div key={e.id} className={`ext-item${on?" on":""}${unavail?" dis":""}`} style={{cursor:unavail?"not-allowed":"pointer",position:"relative"}} onClick={()=>!unavail&&togExt(e.id)}>
                             {unavail&&<div style={{position:"absolute",top:5,right:7,fontSize:9,color:"#ef4444",fontWeight:700}}>NO DISPONIBLE</div>}
-                            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:20}}>{e.icon}</span><div><div style={{fontSize:12,fontWeight:700,color:"#0f172a"}}>{e.label}</div><div style={{fontSize:10,color:"#94a3b8"}}>${e.price}×{allDates.length}día{allDates.length!==1?"s":""}</div></div></div>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:20}}>{e.icon}</span><div><div style={{fontSize:12,fontWeight:700,color:"#0f172a"}}>{e.label}</div><div style={{fontSize:10,color:"#94a3b8"}}>${e.price}×{e.qty} {e.id==="cava"&&bf.boats.length>1?(e.qty!==1?"cavas (1 por lancha)":"cava"):(e.qty!==1?"días":"día")}</div></div></div>
                             <div style={{width:20,height:20,borderRadius:"50%",border:`2px solid ${on?"#0ea5e9":"#e2e8f0"}`,background:on?"#0ea5e9":"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:"#fff",flexShrink:0}}>{on&&"✓"}</div>
                           </div>
                         );})}
@@ -1219,7 +1220,7 @@ function App(){
                           <div className="pr" style={{borderBottom:"1px solid #bae6fd",paddingBottom:6,marginBottom:6}}><span style={{fontWeight:700}}>🏠 Apartamento ({nights}n)</span><span>${aptTot}</span></div>
                         ))}
                         {bf.boats.map(bid=>{const b=BOATS[bid],dates=bf.dates[bid]||[];if(!dates.length)return null;return(<div key={bid}><div style={{fontSize:9,color:"#0369a1",fontWeight:900,letterSpacing:1,textTransform:"uppercase",padding:"4px 0 2px"}}>⛵ {b.name}</div>{dates.map(ds=>{const pr=b.price(ds,bf.pax[bid]);return pr?<div key={ds} className="pr"><span>{fmt(ds)} <span style={{fontSize:10,color:SC[getSeason(ds)]}}>{SL[getSeason(ds)]}</span></span><span>${pr.p}</span></div>:null;})}</div>);})}
-                        {bf.extras.filter(id=>!(id==="wifi"&&wifiUnavail)).map(id=>{const e=dynExtras.find(x=>x.id===id);return e?<div key={id} className="pr"><span>{e.label}×{allDates.length}d</span><span>${e.price*allDates.length}</span></div>:null;})}
+                        {bf.extras.filter(id=>!(id==="wifi"&&wifiUnavail)).map(id=>{const e=dynExtras.find(x=>x.id===id);return e?<div key={id} className="pr"><span>{e.label}×{e.qty}</span><span>${e.price*e.qty}</span></div>:null;})}
                         <div className="ptotal"><span style={{fontWeight:700,fontSize:14}}>Total</span><div className="ptnum bb">${grandTotal} <span style={{fontFamily:"Lato,sans-serif",fontSize:13,color:"#94a3b8",fontWeight:400}}>USD</span></div></div>
                         <div className="dep">✓ Anticipo: ${grandDeposit} USD (30%)</div>
                       </div>
@@ -1280,7 +1281,7 @@ function App(){
                           );
                         })}
                         {[["🏝","Cayos",bf.cayos.length>0?bf.cayos.join(" → "):"Los escogeré el día del paseo con el marino"],
-                          ...(bf.extras.filter(id=>!(id==="wifi"&&wifiUnavail)).length?[["➕","Extras",dynExtras.filter(e=>bf.extras.filter(id=>!(id==="wifi"&&wifiUnavail)).includes(e.id)).map(e=>`${e.label} ($${e.price*allDates.length})`).join(", ")]]:[]),
+                          ...(bf.extras.filter(id=>!(id==="wifi"&&wifiUnavail)).length?[["➕","Extras",dynExtras.filter(e=>bf.extras.filter(id=>!(id==="wifi"&&wifiUnavail)).includes(e.id)).map(e=>`${e.label}${e.qty>1?` ×${e.qty}`:""} ($${e.price*e.qty})`).join(", ")]]:[]),
                           ["👤","Nombre",nombre],["📞","Teléfono",telefono],...(cedula?[["🪪","Documento",cedula]]:[]),
                           ...(notas?[["📝","Notas",notas]]:[])
                         ].map(([ic,lb,val])=>(
