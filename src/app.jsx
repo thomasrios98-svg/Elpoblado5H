@@ -997,7 +997,6 @@ function App(){
                         <span style={{fontSize:11,color:"#94a3b8",marginLeft:6}}>máx 16</span>
                       </div>
                       {isCombo&&<div style={{background:"#f0f9ff",border:"1.5px solid #bae6fd",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:11,color:"#0c4a6e"}}>🚤🚤 Para {boatPax} personas te ofrecemos alquilar <strong>las 2 lanchas juntas</strong>: Kichi ({comboKichi} pax) + Yamaha SX230 ({comboYamaha} pax), el mismo día.</div>}
-                      {boatPax>7&&boatPax<=9&&<div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:11,color:"#92400e"}}>⚓ Para {boatPax} personas solo la Yamaha SX230 tiene capacidad (9 pax máx).</div>}
                       <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}>
                         <button className="btn-next" onClick={()=>setBoatStep(1)}>Siguiente →</button>
                       </div>
