@@ -23,11 +23,18 @@ const AP13="/img/apartamento-13.webp";
 const AP14="/img/apartamento-14.webp";
 
 // ── SEASONS ──────────────────────────────────────────────────────────────────
-const PEAK=[["2026-02-28","2026-03-03"],["2026-03-29","2026-04-05"],["2026-12-24","2027-01-15"],["2027-02-06","2027-02-09"]];
+const PEAK=[["2026-02-28","2026-03-03"],["2026-03-29","2026-04-05"],["2026-12-24","2027-01-15"],["2027-02-06","2027-02-09"],["2027-03-25","2027-03-28"]];
 const MID=[["2026-07-01","2026-07-31"],["2026-08-01","2026-09-15"],["2026-12-10","2026-12-23"]];
-const CARNAVAL_APT=["2027-02-05","2027-02-09"]; // noches de carnaval del apartamento
+// Noches del apartamento con precio especial: [primera noche, última noche, precio].
+const APT_SPECIAL=[["2027-02-05","2027-02-09",250],["2027-03-21","2027-03-23",200],["2027-03-24","2027-03-27",250]];
+// Bloques que se reservan completos: cualquier estadía que toque una noche debe ir de first a end (check-out).
+const APT_BLOCKS=[{name:"Semana Santa",first:"2027-03-24",end:"2027-03-28"}];
+function aptBlockFix(ci,co){
+  for(const b of APT_BLOCKS)if(ci<b.end&&co>b.first&&(ci>b.first||co<b.end))return{...b,ci:ci<b.first?ci:b.first,co:co>b.end?co:b.end};
+  return null;
+}
 // El inicio va un día después de la primera noche porque se compara contra el check-out.
-const MIN_STAY_RANGES=[["2026-12-20","2027-01-10",4],["2027-02-06","2027-02-09",4]];
+const MIN_STAY_RANGES=[["2026-12-20","2027-01-10",4],["2027-02-06","2027-02-09",4],["2027-03-25","2027-03-27",4]];
 function minStayFor(checkin,checkout){
   if(!checkin||!checkout)return 2;
   const ci=new Date(checkin+"T12:00:00").getTime(),co=new Date(checkout+"T12:00:00").getTime();
@@ -50,10 +57,11 @@ const SL={peak:"⭐ Alta",mid:"🟡 Media",low:"🟢 Baja"};
 function wifiPrice(d){return getSeason(d)==="peak"?50:25;}
 
 // ── APARTMENT PRICING ────────────────────────────────────────────────────────
-function aptSeason(d){return d&&d>=CARNAVAL_APT[0]&&d<=CARNAVAL_APT[1]?"peak":getSeason(d);}
+const aptSpecial=(d)=>d&&APT_SPECIAL.find(([a,b])=>d>=a&&d<=b);
+function aptSeason(d){return aptSpecial(d)?"peak":getSeason(d);}
 function aptNightPrice(d){
   if(d>="2026-12-20"&&d<="2027-01-10")return 200;
-  if(d>=CARNAVAL_APT[0]&&d<=CARNAVAL_APT[1])return 250;
+  const sp=aptSpecial(d);if(sp)return sp[2];
   const s=getSeason(d);
   if(s==="peak")return 180;
   if(s==="mid")return 155;
@@ -311,7 +319,7 @@ function FAQSection(){
     ["¿Cómo reservo el apartamento o la lancha?","Puedes verificar disponibilidad y hacer tu reserva directamente en elpoblado5h.com. El sistema muestra fechas disponibles en tiempo real. La reserva se confirma por WhatsApp con un depósito del 30%."],
     ["¿Qué lanchas tienen disponibles para Morrocoy?","Ofrecemos dos opciones:\n\nLancha Kichi — capacidad para 7 personas.\nYamaha SX230 — capacidad para 9 personas.\n\nLas tarifas varían según la temporada y el día de la semana."],
     ["¿A qué cayos de Morrocoy puedo ir en lancha?","Desde Tucacas puedes visitar los principales cayos del Parque Nacional Morrocoy: Cayo Sombrero, Cayo Pescadores, Cayo Alemán, Los Juanes, Playa Sur, Tucupido, Boca Seca y más. Puedes visitar hasta 4 cayos en un día."],
-    ["¿Cuántas noches mínimo puedo reservar el apartamento?","El mínimo general es 2 noches. Del 20 de diciembre al 10 de enero y en Carnaval (5 al 9 de febrero) el mínimo es de 4 noches."],
+    ["¿Cuántas noches mínimo puedo reservar el apartamento?","El mínimo general es 2 noches. Del 20 de diciembre al 10 de enero y en Carnaval (5 al 9 de febrero) el mínimo es de 4 noches. Semana Santa se reserva completa, del miércoles 24 al domingo 28 de marzo (4 noches)."],
     ["¿Cuál es la política de cancelación?","No se realizan devoluciones del depósito. Si avisas con más de 48 horas de anticipación, puedes reprogramar tu estadía con una penalización de $30. Si avisas con menos de 48 horas, pierdes la reserva."]
   ];
   return React.createElement("div",{style:{border:"1px solid #e2e8f0",borderRadius:14,overflow:"hidden",background:"#fff"}},
@@ -435,27 +443,37 @@ function App(){
     }
     return false;
   })():false;
-  // Checkout que deja n noches desde ci, o null si alguna noche está ocupada o pasa el límite de 90 días.
-  const aptCheckoutFor=(ci,n)=>{
-    const cur=new Date(ci+"T12:00:00");
-    const end=new Date(ci+"T12:00:00");end.setDate(end.getDate()+n);
+  // true si todas las noches de ci a co están libres, ci no pasó y co está dentro del límite de 90 días.
+  const aptRangeOk=(ci,co)=>{
+    const today=new Date().toISOString().slice(0,10);
     const max=new Date();max.setDate(max.getDate()+90);
-    if(end.toISOString().slice(0,10)>max.toISOString().slice(0,10))return null;
+    if(ci<today||co>max.toISOString().slice(0,10))return false;
+    const cur=new Date(ci+"T12:00:00"),end=new Date(co+"T12:00:00");
     while(cur<end){
       const ds=cur.toISOString().slice(0,10);
-      if(BOOKED.apt?.includes(ds)||gcBooked.apt?.includes(ds))return null;
+      if(BOOKED.apt?.includes(ds)||gcBooked.apt?.includes(ds))return false;
       cur.setDate(cur.getDate()+1);
     }
-    return end.toISOString().slice(0,10);
+    return true;
   };
-  let aptExtendNights=aptMinStay,aptExtendTo=null;
-  if(nights>0&&nights<aptMinStay&&!aptRangeBlocked){
+  const aptCheckoutFor=(ci,n)=>{
+    const end=new Date(ci+"T12:00:00");end.setDate(end.getDate()+n);
+    const co=end.toISOString().slice(0,10);
+    return aptRangeOk(ci,co)?co:null;
+  };
+  const aptBlock=af.checkin&&af.checkout&&!aptRangeBlocked?aptBlockFix(af.checkin,af.checkout):null;
+  const aptBlockOk=aptBlock?aptRangeOk(aptBlock.ci,aptBlock.co):false;
+  let aptExtendNights=aptMinStay,aptExtendTo=null,aptExtendBlock=null;
+  if(!aptBlock&&nights>0&&nights<aptMinStay&&!aptRangeBlocked){
     aptExtendTo=aptCheckoutFor(af.checkin,aptExtendNights);
     // Extender puede caer en un rango con mínimo mayor (p. ej. llegar justo antes de carnaval).
     while(aptExtendTo&&minStayFor(af.checkin,aptExtendTo)>aptExtendNights){
       aptExtendNights=minStayFor(af.checkin,aptExtendTo);
       aptExtendTo=aptCheckoutFor(af.checkin,aptExtendNights);
     }
+    // O caer dentro de un bloque que se reserva completo.
+    const fix=aptExtendTo&&aptBlockFix(af.checkin,aptExtendTo);
+    if(fix){aptExtendBlock=fix;aptExtendTo=fix.ci===af.checkin&&aptRangeOk(fix.ci,fix.co)?fix.co:null;aptExtendNights=nightsBetween(af.checkin,aptExtendTo);}
   }
 
   // Boat helpers
@@ -532,7 +550,7 @@ function App(){
         let co=ds;
         if(minStayFor(af.checkin,ds)===2&&nightsBetween(af.checkin,ds)<2){
           const auto=aptCheckoutFor(af.checkin,2);
-          if(auto&&minStayFor(af.checkin,auto)===2){co=auto;setAptAutoNote(auto);}
+          if(auto&&minStayFor(af.checkin,auto)===2&&!aptBlockFix(af.checkin,auto)){co=auto;setAptAutoNote(auto);}
         }
         setAf(f=>({...f,checkout:co}));setCiMode("ci");
       }
@@ -862,9 +880,24 @@ function App(){
                           ℹ️ El mínimo es 2 noches, ajustamos tu salida al {fmt(aptAutoNote)}
                         </div>
                       )}
-                      {nights>0&&nights<aptMinStay&&(
+                      {aptBlock&&(
                         <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:10,padding:"10px 14px",marginTop:12,fontSize:12,color:"#c2410c",fontWeight:600}}>
-                          ⚠️ El mínimo de estadía para estas fechas es <strong>{aptExtendTo?aptExtendNights:aptMinStay} noches</strong> y elegiste {nights}.
+                          ⚠️ {aptBlock.name} se reserva completa: entrada a más tardar el {fmt(aptBlock.first)} y salida el {fmt(aptBlock.end)} ({nightsBetween(aptBlock.first,aptBlock.end)} noches mínimo).
+                          {aptBlockOk?(
+                            <button onClick={()=>{setAf(f=>({...f,checkin:aptBlock.ci,checkout:aptBlock.co}));setCiMode("ci");track("apt_block_adjusted",{block:aptBlock.name});}}
+                              style={{display:"block",width:"100%",marginTop:10,padding:"10px 14px",borderRadius:50,border:"none",background:"#0ea5e9",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"Lato,sans-serif"}}>
+                              Ajustar a {fmt(aptBlock.ci)} → {fmt(aptBlock.co)} · {nightsBetween(aptBlock.ci,aptBlock.co)} noches
+                            </button>
+                          ):(
+                            <div style={{marginTop:6,fontWeight:400}}>Esas fechas no están disponibles completas. Por favor elige otras fechas.</div>
+                          )}
+                        </div>
+                      )}
+                      {!aptBlock&&nights>0&&nights<aptMinStay&&(
+                        <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:10,padding:"10px 14px",marginTop:12,fontSize:12,color:"#c2410c",fontWeight:600}}>
+                          {aptExtendBlock
+                            ?<>⚠️ El mínimo es <strong>{aptMinStay} noches</strong>, y desde el {fmt(aptExtendBlock.first)} empieza {aptExtendBlock.name}, que se reserva completa hasta el {fmt(aptExtendBlock.end)}</>
+                            :<>⚠️ El mínimo de estadía para estas fechas es <strong>{aptExtendTo?aptExtendNights:aptMinStay} noches</strong> y elegiste {nights}.</>}
                           {aptExtendTo?(
                             <button onClick={()=>{setAf(f=>({...f,checkout:aptExtendTo}));setCiMode("ci");track("apt_min_stay_extended",{from:nights,to:aptExtendNights});}}
                               style={{display:"block",width:"100%",marginTop:10,padding:"10px 14px",borderRadius:50,border:"none",background:"#0ea5e9",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"Lato,sans-serif"}}>
@@ -882,7 +915,7 @@ function App(){
                       )}
                       <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
                         {mode==="both"?(
-                          <button className="btn-next" disabled={nights<aptMinStay||aptRangeBlocked} onClick={()=>{
+                          <button className="btn-next" disabled={nights<aptMinStay||aptRangeBlocked||!!aptBlock} onClick={()=>{
                               track("apt_dates_confirmed",{nights,checkin:af.checkin,checkout:af.checkout});
                               setAptStep(1);
                               // Auto-select promo boat if promo active
@@ -893,7 +926,7 @@ function App(){
                             {selectedPromo?"Siguiente: Seleccionar lancha →":"Siguiente: Lanchas →"}
                           </button>
                         ):(
-                          <button className="btn-next" disabled={nights<aptMinStay||aptRangeBlocked} onClick={()=>{track("apt_dates_confirmed",{nights,checkin:af.checkin,checkout:af.checkout});setAptStep(1);}}>Siguiente →</button>
+                          <button className="btn-next" disabled={nights<aptMinStay||aptRangeBlocked||!!aptBlock} onClick={()=>{track("apt_dates_confirmed",{nights,checkin:af.checkin,checkout:af.checkout});setAptStep(1);}}>Siguiente →</button>
                         )}
                       </div>
                     </div>
