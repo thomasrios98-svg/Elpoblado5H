@@ -34,7 +34,7 @@ function aptBlockFix(ci,co){
   return null;
 }
 // El inicio va un día después de la primera noche porque se compara contra el check-out.
-const MIN_STAY_RANGES=[["2027-01-02","2027-01-10",4],["2027-02-06","2027-02-09",4],["2027-03-25","2027-03-27",4]];
+const MIN_STAY_RANGES=[["2027-01-02","2027-01-10",3],["2027-02-06","2027-02-09",4],["2027-03-25","2027-03-27",4]];
 function minStayFor(checkin,checkout){
   if(!checkin||!checkout)return 2;
   const ci=new Date(checkin+"T12:00:00").getTime(),co=new Date(checkout+"T12:00:00").getTime();
@@ -319,7 +319,7 @@ function FAQSection(){
     ["¿Cómo reservo el apartamento o la lancha?","Puedes verificar disponibilidad y hacer tu reserva directamente en elpoblado5h.com. El sistema muestra fechas disponibles en tiempo real. La reserva se confirma por WhatsApp con un depósito del 30%."],
     ["¿Qué lanchas tienen disponibles para Morrocoy?","Ofrecemos dos opciones:\n\nLancha Kichi — capacidad para 7 personas.\nYamaha SX230 — capacidad para 9 personas.\n\nLas tarifas varían según la temporada y el día de la semana."],
     ["¿A qué cayos de Morrocoy puedo ir en lancha?","Desde Tucacas puedes visitar los principales cayos del Parque Nacional Morrocoy: Cayo Sombrero, Cayo Pescadores, Cayo Alemán, Los Juanes, Playa Sur, Tucupido, Boca Seca y más. Puedes visitar hasta 4 cayos en un día."],
-    ["¿Cuántas noches mínimo puedo reservar el apartamento?","El mínimo general es 2 noches. Del 1 al 10 de enero y en Carnaval (5 al 9 de febrero) el mínimo es de 4 noches. Semana Santa se reserva completa, del miércoles 24 al domingo 28 de marzo (4 noches)."],
+    ["¿Cuántas noches mínimo puedo reservar el apartamento?","El mínimo general es 2 noches. Del 1 al 10 de enero el mínimo es de 3 noches y en Carnaval (5 al 9 de febrero) de 4 noches. Semana Santa se reserva completa, del miércoles 24 al domingo 28 de marzo (4 noches)."],
     ["¿Cuál es la política de cancelación?","No se realizan devoluciones del depósito. Si avisas con más de 48 horas de anticipación, puedes reprogramar tu estadía con una penalización de $30. Si avisas con menos de 48 horas, pierdes la reserva."]
   ];
   return React.createElement("div",{style:{border:"1px solid #e2e8f0",borderRadius:14,overflow:"hidden",background:"#fff"}},
