@@ -323,6 +323,7 @@ function App(){
   const[af,setAf]=useState({...AF0});
   const[ciMode,setCiMode]=useState("ci"); // "ci" or "co"
   const[aptPax,setAptPax]=useState(2);
+  const[aptAutoNote,setAptAutoNote]=useState("");
   const[boatPax,setBoatPax]=useState(2);
   const[boatGal,setBoatGal]=useState(null);
   const[pendingDates,setPendingDates]=useState([]);
@@ -417,9 +418,10 @@ function App(){
     }
     return false;
   })():false;
-  const aptExtendTo=nights>0&&nights<aptMinStay&&!aptRangeBlocked?(()=>{
-    const cur=new Date(af.checkin+"T12:00:00");
-    const end=new Date(af.checkin+"T12:00:00");end.setDate(end.getDate()+aptMinStay);
+  // Checkout que deja n noches desde ci, o null si alguna noche está ocupada o pasa el límite de 90 días.
+  const aptCheckoutFor=(ci,n)=>{
+    const cur=new Date(ci+"T12:00:00");
+    const end=new Date(ci+"T12:00:00");end.setDate(end.getDate()+n);
     const max=new Date();max.setDate(max.getDate()+90);
     if(end.toISOString().slice(0,10)>max.toISOString().slice(0,10))return null;
     while(cur<end){
@@ -428,7 +430,16 @@ function App(){
       cur.setDate(cur.getDate()+1);
     }
     return end.toISOString().slice(0,10);
-  })():null;
+  };
+  let aptExtendNights=aptMinStay,aptExtendTo=null;
+  if(nights>0&&nights<aptMinStay&&!aptRangeBlocked){
+    aptExtendTo=aptCheckoutFor(af.checkin,aptExtendNights);
+    // Extender puede caer en un rango con mínimo mayor (p. ej. llegar justo antes de carnaval).
+    while(aptExtendTo&&minStayFor(af.checkin,aptExtendTo)>aptExtendNights){
+      aptExtendNights=minStayFor(af.checkin,aptExtendTo);
+      aptExtendTo=aptCheckoutFor(af.checkin,aptExtendNights);
+    }
+  }
 
   // Boat helpers
   const togBoat=(id)=>setBf(f=>{const on=f.boats.includes(id);return{...f,boats:on?f.boats.filter(x=>x!==id):[...f.boats,id],dates:{...f.dates,[id]:[]}};});
@@ -496,10 +507,18 @@ function App(){
   const hasDates=bf.boats.length>0&&bf.boats.every(bid=>(bf.dates[bid]||[]).length>0);
 
   const handleDayClick=(ds)=>{
+    setAptAutoNote("");
     if(ciMode==="ci"){setAf(f=>({...f,checkin:ds,checkout:""}));setCiMode("co");}
     else{
       if(ds<=af.checkin){setAf(f=>({...f,checkin:ds,checkout:""}));setCiMode("co");}
-      else{setAf(f=>({...f,checkout:ds}));setCiMode("ci");}
+      else{
+        let co=ds;
+        if(minStayFor(af.checkin,ds)===2&&nightsBetween(af.checkin,ds)<2){
+          const auto=aptCheckoutFor(af.checkin,2);
+          if(auto&&minStayFor(af.checkin,auto)===2){co=auto;setAptAutoNote(auto);}
+        }
+        setAf(f=>({...f,checkout:co}));setCiMode("ci");
+      }
     }
   };
 
@@ -817,17 +836,22 @@ function App(){
                             const d=new Date(af.checkin+"T12:00:00");d.setDate(d.getDate()+i);const ds=d.toISOString().slice(0,10);
                             return<div key={ds} className="pr"><span>{fmt(ds)} <span style={{fontSize:10,color:SC[aptSeason(ds)]}}>{SL[aptSeason(ds)]}</span></span><span>${aptNightPrice(ds)}</span></div>;
                           })}
-                          <div className="ptotal"><span style={{fontWeight:700,fontSize:14}}>Total {nights} noches</span><div className="ptnum bb">${aptTot} <span style={{fontFamily:"Lato,sans-serif",fontSize:13,color:"#94a3b8",fontWeight:400}}>USD</span></div></div>
+                          <div className="ptotal"><span style={{fontWeight:700,fontSize:14}}>Total {nights} noche{nights!==1?"s":""}</span><div className="ptnum bb">${aptTot} <span style={{fontFamily:"Lato,sans-serif",fontSize:13,color:"#94a3b8",fontWeight:400}}>USD</span></div></div>
                           <div className="dep">✓ Anticipo: ${Math.ceil(aptTot*.3)} USD (30%)</div>
+                        </div>
+                      )}
+                      {aptAutoNote&&af.checkout===aptAutoNote&&(
+                        <div style={{background:"#f0f9ff",border:"1.5px solid #bae6fd",borderRadius:10,padding:"10px 14px",marginTop:12,fontSize:12,color:"#0c4a6e"}}>
+                          ℹ️ El mínimo es 2 noches, ajustamos tu salida al {fmt(aptAutoNote)}
                         </div>
                       )}
                       {nights>0&&nights<aptMinStay&&(
                         <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:10,padding:"10px 14px",marginTop:12,fontSize:12,color:"#c2410c",fontWeight:600}}>
-                          ⚠️ El mínimo de estadía para estas fechas es <strong>{aptMinStay} noches</strong> y elegiste {nights}.
+                          ⚠️ El mínimo de estadía para estas fechas es <strong>{aptExtendTo?aptExtendNights:aptMinStay} noches</strong> y elegiste {nights}.
                           {aptExtendTo?(
-                            <button onClick={()=>{setAf(f=>({...f,checkout:aptExtendTo}));setCiMode("ci");track("apt_min_stay_extended",{from:nights,to:aptMinStay});}}
+                            <button onClick={()=>{setAf(f=>({...f,checkout:aptExtendTo}));setCiMode("ci");track("apt_min_stay_extended",{from:nights,to:aptExtendNights});}}
                               style={{display:"block",width:"100%",marginTop:10,padding:"10px 14px",borderRadius:50,border:"none",background:"#0ea5e9",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"Lato,sans-serif"}}>
-                              Extender a {aptMinStay} noches · salida {fmt(aptExtendTo)}
+                              Extender a {aptExtendNights} noches · salida {fmt(aptExtendTo)}
                             </button>
                           ):(
                             <div style={{marginTop:6,fontWeight:400}}>No hay disponibilidad para extender desde esa entrada. Por favor elige otras fechas.</div>
