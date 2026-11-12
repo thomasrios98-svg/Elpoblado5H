@@ -25,7 +25,9 @@ const AP14="/img/apartamento-14.webp";
 // ── SEASONS ──────────────────────────────────────────────────────────────────
 const PEAK=[["2026-02-28","2026-03-03"],["2026-03-29","2026-04-05"],["2026-12-24","2027-01-15"],["2027-02-06","2027-02-09"]];
 const MID=[["2026-07-01","2026-07-31"],["2026-08-01","2026-09-15"],["2026-12-10","2026-12-23"]];
-const MIN_STAY_RANGES=[["2026-12-20","2027-01-10",4]];
+const CARNAVAL_APT=["2027-02-05","2027-02-09"]; // noches de carnaval del apartamento
+// El inicio va un día después de la primera noche porque se compara contra el check-out.
+const MIN_STAY_RANGES=[["2026-12-20","2027-01-10",4],["2027-02-06","2027-02-09",4]];
 function minStayFor(checkin,checkout){
   if(!checkin||!checkout)return 2;
   const ci=new Date(checkin+"T12:00:00").getTime(),co=new Date(checkout+"T12:00:00").getTime();
@@ -48,8 +50,10 @@ const SL={peak:"⭐ Alta",mid:"🟡 Media",low:"🟢 Baja"};
 function wifiPrice(d){return getSeason(d)==="peak"?50:25;}
 
 // ── APARTMENT PRICING ────────────────────────────────────────────────────────
+function aptSeason(d){return d&&d>=CARNAVAL_APT[0]&&d<=CARNAVAL_APT[1]?"peak":getSeason(d);}
 function aptNightPrice(d){
   if(d>="2026-12-20"&&d<="2027-01-10")return 200;
+  if(d>=CARNAVAL_APT[0]&&d<=CARNAVAL_APT[1])return 250;
   const s=getSeason(d);
   if(s==="peak")return 180;
   if(s==="mid")return 155;
@@ -115,7 +119,7 @@ const PROMOS = {
 };
 function isPromoAvailable(checkin) {
   // Only in low season
-  return checkin && getSeason(checkin) === "low";
+  return checkin && aptSeason(checkin) === "low";
 }
 function promoPrice(promo, pax) {
   return pax >= promo.maxPax ? promo.pricePerPax * promo.maxPax : promo.totalFixed;
@@ -170,7 +174,7 @@ function Cal({boatId,blockedDates,sel,onToggle,checkinMode,checkin,checkout,onDa
           const isci=isCI(ds),isco=isCO(ds);
           const s=sel?sel.includes(ds):false;
           const tot=ds===ts;
-          const wk=[0,5,6].includes(new Date(ds+"T12:00:00").getDay()),season=getSeason(ds);
+          const wk=[0,5,6].includes(new Date(ds+"T12:00:00").getDay()),season=checkinMode?aptSeason(ds):getSeason(ds);
           let c="cd";
           if(past)c+=" past";
           else if(blk)c+=" blocked";
@@ -799,7 +803,7 @@ function App(){
                           <div style={{fontSize:10,color:"#0369a1",fontWeight:900,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Desglose por noche</div>
                           {Array.from({length:nights},(_,i)=>{
                             const d=new Date(af.checkin+"T12:00:00");d.setDate(d.getDate()+i);const ds=d.toISOString().slice(0,10);
-                            return<div key={ds} className="pr"><span>{fmt(ds)} <span style={{fontSize:10,color:SC[getSeason(ds)]}}>{SL[getSeason(ds)]}</span></span><span>${aptNightPrice(ds)}</span></div>;
+                            return<div key={ds} className="pr"><span>{fmt(ds)} <span style={{fontSize:10,color:SC[aptSeason(ds)]}}>{SL[aptSeason(ds)]}</span></span><span>${aptNightPrice(ds)}</span></div>;
                           })}
                           <div className="ptotal"><span style={{fontWeight:700,fontSize:14}}>Total {nights} noches</span><div className="ptnum bb">${aptTot} <span style={{fontFamily:"Lato,sans-serif",fontSize:13,color:"#94a3b8",fontWeight:400}}>USD</span></div></div>
                           <div className="dep">✓ Anticipo: ${Math.ceil(aptTot*.3)} USD (30%)</div>
