@@ -26,7 +26,7 @@ const AP14="/img/apartamento-14.webp";
 const PEAK=[["2026-02-28","2026-03-03"],["2026-03-29","2026-04-05"],["2026-12-24","2027-01-15"],["2027-02-06","2027-02-09"],["2027-03-25","2027-03-28"]];
 const MID=[["2026-07-01","2026-07-31"],["2026-08-01","2026-09-15"],["2026-12-10","2026-12-23"]];
 // Noches del apartamento con precio especial: [primera noche, última noche, precio].
-const APT_SPECIAL=[["2027-02-05","2027-02-09",250],["2027-03-21","2027-03-23",200],["2027-03-24","2027-03-27",250]];
+const APT_SPECIAL=[["2026-12-20","2027-01-10",200],["2027-02-05","2027-02-09",250],["2027-03-21","2027-03-23",200],["2027-03-24","2027-03-27",250]];
 // Bloques que se reservan completos: cualquier estadía que toque una noche debe ir de first a end (check-out).
 const APT_BLOCKS=[{name:"Semana Santa",first:"2027-03-24",end:"2027-03-28"}];
 function aptBlockFix(ci,co){
@@ -60,7 +60,6 @@ function wifiPrice(d){return getSeason(d)==="peak"?50:25;}
 const aptSpecial=(d)=>d&&APT_SPECIAL.find(([a,b])=>d>=a&&d<=b);
 function aptSeason(d){return aptSpecial(d)?"peak":getSeason(d);}
 function aptNightPrice(d){
-  if(d>="2026-12-20"&&d<="2027-01-10")return 200;
   const sp=aptSpecial(d);if(sp)return sp[2];
   const s=getSeason(d);
   if(s==="peak")return 180;
