@@ -311,7 +311,7 @@ function FAQSection(){
     ["¿Cómo reservo el apartamento o la lancha?","Puedes verificar disponibilidad y hacer tu reserva directamente en elpoblado5h.com. El sistema muestra fechas disponibles en tiempo real. La reserva se confirma por WhatsApp con un depósito del 30%."],
     ["¿Qué lanchas tienen disponibles para Morrocoy?","Ofrecemos dos opciones:\n\nLancha Kichi — capacidad para 7 personas.\nYamaha SX230 — capacidad para 9 personas.\n\nLas tarifas varían según la temporada y el día de la semana."],
     ["¿A qué cayos de Morrocoy puedo ir en lancha?","Desde Tucacas puedes visitar los principales cayos del Parque Nacional Morrocoy: Cayo Sombrero, Cayo Pescadores, Cayo Alemán, Los Juanes, Playa Sur, Tucupido, Boca Seca y más. Puedes visitar hasta 4 cayos en un día."],
-    ["¿Cuántas noches mínimo puedo reservar el apartamento?","El mínimo general es 2 noches. Durante la temporada alta del 20 de diciembre al 10 de enero, el mínimo es de 4 noches."],
+    ["¿Cuántas noches mínimo puedo reservar el apartamento?","El mínimo general es 2 noches. Del 20 de diciembre al 10 de enero y en Carnaval (5 al 9 de febrero) el mínimo es de 4 noches."],
     ["¿Cuál es la política de cancelación?","No se realizan devoluciones del depósito. Si avisas con más de 48 horas de anticipación, puedes reprogramar tu estadía con una penalización de $30. Si avisas con menos de 48 horas, pierdes la reserva."]
   ];
   return React.createElement("div",{style:{border:"1px solid #e2e8f0",borderRadius:14,overflow:"hidden",background:"#fff"}},
@@ -398,6 +398,11 @@ function App(){
     fetchGCal();
   },[]);
   const ref=useRef();
+  // Al cambiar de paso el formulario puede acortarse y dejar al cliente mirando otra sección.
+  useEffect(()=>{
+    const el=ref.current;if(!el)return;
+    if(el.getBoundingClientRect().top<0)el.scrollIntoView({behavior:"smooth"});
+  },[aptStep,boatStep,mode]);
 
   // GA4 event names mapped to Meta Pixel standard events; the rest go as custom events.
   const FB_EVENTS={booking_started:"InitiateCheckout",whatsapp_sent:"Lead",email_sent:"Lead",whatsapp_click:"Contact"};
@@ -656,7 +661,7 @@ function App(){
               <div className="bb" style={{fontSize:26,color:"#0f172a"}}>APARTAMENTO</div>
               <div style={{fontSize:11,color:"#94a3b8",fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>2 Hab + Mesanina · 7 personas · 2 baños</div><div style={{marginTop:4}}><a href="https://share.google/CI23gtgSK25EgtnZB" target="_blank" style={{fontSize:11,color:"#0ea5e9",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:3}}>📍 Ver ubicación en Maps</a></div>
               <div className="bb" style={{fontSize:32,color:"#0369a1"}}>$135<span style={{fontFamily:"Lato,sans-serif",fontSize:12,color:"#94a3b8",fontWeight:400}}> USD/noche · Temp. Baja</span></div>
-              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>Temp. Media: $155 · Alta: $180/noche</div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>Temp. Media: $155 · Alta: desde $180/noche</div>
               <div className="tags" style={{marginTop:10}}>
                 {["Cocina equipada","3 A/C","WiFi y TV","Piscina","Jardín","Estacionamiento","Balcón + Parrillera","Mascotas ✓","Planta eléctrica","Vigilancia 24h","Lavadora","Secadora","Agua caliente"].map(f=><span key={f} className="tag">{f}</span>)}
               </div>
@@ -734,7 +739,7 @@ function App(){
       {/* ── INFO STRIP ── */}
       <div className="strip">
         <div className="strip-grid">
-          {[["🏠","7 personas","2 hab + mesanina"],["⛵","2 lanchas","Hasta 9 pax c/u"],["🏝","4 cayos","Por salida"],["💳","30% anticipo","Zelle · Binance"],["🐾","Mascotas","Permitidas"]].map(([ic,t,s])=>(
+          {[["🏠","7 personas","2 hab + mesanina"],["⛵","2 lanchas","Kichi 7 · Yamaha 9 pax"],["🏝","4 cayos","Por salida"],["💳","30% anticipo","Zelle · Binance"],["🐾","Mascotas","Permitidas"]].map(([ic,t,s])=>(
             <div key={t}><div style={{fontSize:26,marginBottom:6}}>{ic}</div><div className="bb" style={{fontSize:17,color:"#fff",letterSpacing:.5}}>{t}</div><div style={{fontSize:11,color:"rgba(255,255,255,.6)",marginTop:3}}>{s}</div></div>
           ))}
         </div>
@@ -759,7 +764,7 @@ function App(){
             <h2 className="bb" style={{fontSize:"clamp(32px,7vw,52px)",color:"#fff",letterSpacing:.5}}>¿QUÉ QUIERES RESERVAR?</h2>
             <p style={{color:"rgba(255,255,255,.65)",fontSize:13,marginTop:8,marginBottom:36}}>Elige una opción para comenzar</p>
             <div style={{display:"grid",gap:14}}>
-              {[["apt","🏠","Solo Apartamento","Alojamiento en Morrocoy, Morrocoy",["$135–$180/noche","7 personas","2 hab + Mesanina"]],
+              {[["apt","🏠","Solo Apartamento","Alojamiento en Tucacas, Morrocoy",["Desde $135/noche","7 personas","2 hab + Mesanina"]],
                 ["boat","⛵","Solo Lanchas","Salida a los cayos desde Marina Las Canoas",["Desde $160/día","Kichi 7 pax · Yamaha 9 pax","Hasta 4 cayos"]],
                 ["both","🏠+⛵","Apartamento + Lanchas","La experiencia completa de Morrocoy",["Todo en una reserva","Precio combinado","30% anticipo"]]
               ].map(([m,ic,title,sub,bullets])=>(
