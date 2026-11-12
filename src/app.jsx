@@ -151,6 +151,16 @@ function Cal({boatId,blockedDates,sel,onToggle,checkinMode,checkin,checkout,onDa
   };
   const isCI=(ds)=>checkinMode&&checkin===ds;
   const isCO=(ds)=>checkinMode&&checkout===ds;
+  // El primer día ocupado después del check-in sirve como salida: el otro huésped llega en la tarde.
+  const firstBlkAfterCi=checkinMode&&checkin?(()=>{
+    const cur=new Date(checkin+"T12:00:00");
+    for(let i=0;i<120;i++){
+      cur.setDate(cur.getDate()+1);
+      const d=cur.toISOString().slice(0,10);
+      if(BOOKED.apt?.includes(d)||gcBooked.apt?.includes(d))return d;
+    }
+    return null;
+  })():null;
 
   return(
     <div className="cal-wrap">
@@ -169,7 +179,8 @@ function Cal({boatId,blockedDates,sel,onToggle,checkinMode,checkin,checkout,onDa
           maxDate.setDate(maxDate.getDate()+90);
           const maxDs=maxDate.toISOString().slice(0,10);
           const beyondLimit=ds>maxDs;
-          const blk=blockedDates?blockedDates.includes(ds):boatId?(BOOKED[boatId]?.includes(ds)||gcBooked[boatId]?.includes(ds)):(BOOKED.apt?.includes(ds)||gcBooked.apt?.includes(ds));
+          const coOnly=ds===firstBlkAfterCi&&(!checkout||checkout===ds);
+          const blk=coOnly&&!checkout?false:coOnly?true:blockedDates?blockedDates.includes(ds):boatId?(BOOKED[boatId]?.includes(ds)||gcBooked[boatId]?.includes(ds)):(BOOKED.apt?.includes(ds)||gcBooked.apt?.includes(ds));
           const inRange=isInRange(ds);
           const isci=isCI(ds),isco=isCO(ds);
           const s=sel?sel.includes(ds):false;
@@ -177,6 +188,7 @@ function Cal({boatId,blockedDates,sel,onToggle,checkinMode,checkin,checkout,onDa
           const wk=[0,5,6].includes(new Date(ds+"T12:00:00").getDay()),season=checkinMode?aptSeason(ds):getSeason(ds);
           let c="cd";
           if(past)c+=" past";
+          else if(isco&&coOnly)c+=" sel";
           else if(blk)c+=" blocked";
           else if(beyondLimit)c+=" beyond-limit";
           else if(isci||isco)c+=" sel";
@@ -526,7 +538,7 @@ function App(){
     // Use promo pricing if active
     const finalTotal = activePromo ? promoTotal : grandTotal;
     const finalDeposit = activePromo ? promoDeposit : grandDeposit;
-    let msg=`🏠⛵ *Reserva – El Poblado 5H*\n`;
+    let msg=`${mode==="apt"?"🏠":mode==="boat"?"⛵":"🏠⛵"} *Reserva – El Poblado 5H*\n`;
     if(mode==="apt"||mode==="both"){
       msg+=`\n🏠 *APARTAMENTO*\n`;
       msg+=`👥 Personas: ${aptPax}\n`;
