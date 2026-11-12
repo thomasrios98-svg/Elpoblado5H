@@ -417,6 +417,18 @@ function App(){
     }
     return false;
   })():false;
+  const aptExtendTo=nights>0&&nights<aptMinStay&&!aptRangeBlocked?(()=>{
+    const cur=new Date(af.checkin+"T12:00:00");
+    const end=new Date(af.checkin+"T12:00:00");end.setDate(end.getDate()+aptMinStay);
+    const max=new Date();max.setDate(max.getDate()+90);
+    if(end.toISOString().slice(0,10)>max.toISOString().slice(0,10))return null;
+    while(cur<end){
+      const ds=cur.toISOString().slice(0,10);
+      if(BOOKED.apt?.includes(ds)||gcBooked.apt?.includes(ds))return null;
+      cur.setDate(cur.getDate()+1);
+    }
+    return end.toISOString().slice(0,10);
+  })():null;
 
   // Boat helpers
   const togBoat=(id)=>setBf(f=>{const on=f.boats.includes(id);return{...f,boats:on?f.boats.filter(x=>x!==id):[...f.boats,id],dates:{...f.dates,[id]:[]}};});
@@ -811,7 +823,15 @@ function App(){
                       )}
                       {nights>0&&nights<aptMinStay&&(
                         <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:10,padding:"10px 14px",marginTop:12,fontSize:12,color:"#c2410c",fontWeight:600}}>
-                          ⚠️ El mínimo de estadía para estas fechas es <strong>{aptMinStay} noches</strong>. Por favor selecciona un checkout más tarde.
+                          ⚠️ El mínimo de estadía para estas fechas es <strong>{aptMinStay} noches</strong> y elegiste {nights}.
+                          {aptExtendTo?(
+                            <button onClick={()=>{setAf(f=>({...f,checkout:aptExtendTo}));setCiMode("ci");track("apt_min_stay_extended",{from:nights,to:aptMinStay});}}
+                              style={{display:"block",width:"100%",marginTop:10,padding:"10px 14px",borderRadius:50,border:"none",background:"#0ea5e9",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"Lato,sans-serif"}}>
+                              Extender a {aptMinStay} noches · salida {fmt(aptExtendTo)}
+                            </button>
+                          ):(
+                            <div style={{marginTop:6,fontWeight:400}}>No hay disponibilidad para extender desde esa entrada. Por favor elige otras fechas.</div>
+                          )}
                         </div>
                       )}
                       {aptRangeBlocked&&(
