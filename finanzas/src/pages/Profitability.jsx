@@ -29,7 +29,7 @@ export default function Profitability() {
         <PeriodPicker mode={mode} onModeChange={setMode} value={period} onChange={setPeriod} years={years} />
       </div>
 
-      <div className="grid cols-3">
+      <div className="grid cols-4">
         {UNITS.map((u) => {
           const d = profitability.perUnit[u.id];
           return (
@@ -46,7 +46,7 @@ export default function Profitability() {
                     <td style={{ textAlign: 'right', color: 'var(--expense)', fontWeight: 600 }}>-{formatMoney(d.individualExpense)}</td>
                   </tr>
                   <tr>
-                    <td>Parte de gastos generales (⅓)</td>
+                    <td>Parte de gastos generales</td>
                     <td style={{ textAlign: 'right', color: 'var(--expense)', fontWeight: 600 }}>-{formatMoney(d.generalShare)}</td>
                   </tr>
                   <tr>
@@ -78,7 +78,7 @@ export default function Profitability() {
               <td style={{ textAlign: 'right', color: 'var(--income)', fontWeight: 600 }}>{formatMoney(profitability.global.income)}</td>
             </tr>
             <tr>
-              <td>Gastos individuales (suma de las 3 unidades)</td>
+              <td>Gastos individuales (suma de las unidades)</td>
               <td style={{ textAlign: 'right', color: 'var(--expense)', fontWeight: 600 }}>-{formatMoney(profitability.global.individualExpense)}</td>
             </tr>
             <tr>

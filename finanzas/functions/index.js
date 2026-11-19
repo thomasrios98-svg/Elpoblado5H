@@ -13,7 +13,7 @@ const MAX_QUESTION_LENGTH = 1000;
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 
 const SYSTEM_PROMPT = `Eres el asistente financiero interno del sistema de El Poblado 5H, una
-propiedad vacacional con tres unidades: Apto 5H, Kichi y Yamaha. Tu única fuente de información
+propiedad vacacional con cuatro unidades: Apto 5H, Kichi, Yamaha y Lucky Sea (desde el 19 de noviembre de 2026). Tu única fuente de información
 es el resumen de datos financieros (JSON) que se te entrega en cada mensaje: totales, saldos por
 método de pago, rentabilidad por unidad, evolución mensual, gastos por categoría y método, y los
 movimientos más recientes. Todos los montos están en USD.

@@ -1,8 +1,8 @@
 # Finanzas · El Poblado 5H
 
 Sistema financiero web para El Poblado 5H: control de ingresos, gastos, saldos,
-rentabilidad y análisis mediante IA para las tres unidades (Apto 5H, Kichi y
-Yamaha). Es una app independiente del sitio de reservas (raíz del repo).
+rentabilidad y análisis mediante IA para las unidades (Apto 5H, Kichi,
+Yamaha y Lucky Sea). Es una app independiente del sitio de reservas (raíz del repo).
 
 Todos los montos se guardan y reportan en USD. Como excepción, los ingresos se
 pueden registrar en Bolívares: el sistema convierte automáticamente a USD
@@ -158,8 +158,10 @@ USD directamente.
 
 ## Reparto de gastos generales
 
-Los gastos marcados como **generales** se dividen en partes iguales (⅓ + ⅓ +
-⅓) entre Apto 5H, Kichi y Yamaha al calcular la rentabilidad de cada unidad.
+Los gastos marcados como **generales** se dividen en partes iguales entre las
+unidades activas en la fecha del gasto (Apto 5H, Kichi y Yamaha; Lucky Sea desde
+el 19 de noviembre de 2026, según `since` en `src/lib/constants.js`) al calcular
+la rentabilidad de cada unidad.
 Los gastos **individuales** solo afectan a la unidad seleccionada.
 
 ## Estado de esta entrega
