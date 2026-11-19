@@ -3,7 +3,7 @@
   "description": "Cloud Functions para el sistema financiero de El Poblado 5H",
   "private": true,
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "index.js",
   "scripts": {
