@@ -51,7 +51,7 @@ export default function Reports() {
       ? [
           { label: 'Ingresos', value: profitability.perUnit[unit].income },
           { label: 'Gastos individuales', value: -profitability.perUnit[unit].individualExpense },
-          { label: 'Parte de gastos generales (⅓)', value: -profitability.perUnit[unit].generalShare },
+          { label: 'Parte de gastos generales', value: -profitability.perUnit[unit].generalShare },
           { label: 'Resultado', value: profitability.perUnit[unit].result },
         ]
       : [

@@ -26,7 +26,7 @@ import {
 import { formatMoney, monthLabel } from '../lib/format';
 import { UNITS } from '../lib/constants';
 
-const UNIT_COLORS = { apto5h: '#1e3a5f', kichi: '#2f7d5f', yamaha: '#b5791b' };
+const UNIT_COLORS = { apto5h: '#1e3a5f', kichi: '#2f7d5f', yamaha: '#b5791b', lukisea: '#6d4fc2' };
 
 export default function Dashboard() {
   const { movements, transfers, loading } = useData();
@@ -69,7 +69,7 @@ export default function Dashboard() {
         <StatCard label="Dinero disponible" value={availableMoney} tone="neutral" />
       </div>
 
-      <div className="grid cols-3" style={{ marginTop: 16 }}>
+      <div className="grid cols-4" style={{ marginTop: 16 }}>
         {UNITS.map((u) => {
           const result = profitability.perUnit[u.id]?.result || 0;
           return (

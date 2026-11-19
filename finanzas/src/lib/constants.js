@@ -2,6 +2,9 @@ export const UNITS = [
   { id: 'apto5h', label: 'Apto 5H' },
   { id: 'kichi', label: 'Kichi' },
   { id: 'yamaha', label: 'Yamaha' },
+  // `since`: first day the unit is part of the business. General expenses dated
+  // before it are split only among the units that existed then.
+  { id: 'lukisea', label: 'Luki Sea', since: '2026-11-19' },
 ];
 
 export const UNIT_LABELS = Object.fromEntries(UNITS.map((u) => [u.id, u.label]));
@@ -30,6 +33,8 @@ export const EXPENSE_CATEGORIES = [
   'Reparaciones',
   'Marina/Muelle',
   'Gasolina',
+  'Intereses',
+  'Pago de préstamo',
   'Otros',
 ];
 
@@ -40,7 +45,10 @@ export const MOVEMENT_TYPES = [
 
 export const EXPENSE_SCOPES = [
   { id: 'individual', label: 'Individual (de una unidad)' },
-  { id: 'general', label: 'General (se reparte entre las 3 unidades)' },
+  { id: 'general', label: 'General (se reparte entre las unidades activas)' },
 ];
 
-export const GENERAL_EXPENSE_SHARE = 1 / 3;
+/** Units active on a given date (YYYY-MM-DD); general expenses are split evenly among them. */
+export function activeUnits(dateStr) {
+  return UNITS.filter((u) => !u.since || !dateStr || dateStr >= u.since);
+}

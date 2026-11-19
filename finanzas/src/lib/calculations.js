@@ -1,4 +1,4 @@
-import { UNITS, PAYMENT_METHODS, GENERAL_EXPENSE_SHARE } from './constants';
+import { UNITS, PAYMENT_METHODS, activeUnits } from './constants';
 
 export function inPeriod(dateStr, { year, month }) {
   if (!dateStr) return false;
@@ -54,12 +54,14 @@ export function computeBalances(movements, transfers) {
 
 /**
  * Rentabilidad por unidad: ingresos de la unidad - gastos individuales de la
- * unidad - 1/3 de los gastos generales (dentro del conjunto de movimientos dado,
- * ya filtrado por periodo si aplica).
+ * unidad - su parte de los gastos generales. Cada gasto general se reparte en
+ * partes iguales entre las unidades activas en la fecha del gasto (dentro del
+ * conjunto de movimientos dado, ya filtrado por periodo si aplica).
  */
 export function computeProfitability(movements) {
   const incomeByUnit = Object.fromEntries(UNITS.map((u) => [u.id, 0]));
   const individualExpenseByUnit = Object.fromEntries(UNITS.map((u) => [u.id, 0]));
+  const generalShareByUnit = Object.fromEntries(UNITS.map((u) => [u.id, 0]));
   let generalExpense = 0;
 
   for (const mv of movements) {
@@ -69,18 +71,19 @@ export function computeProfitability(movements) {
     } else if (mv.type === 'expense') {
       if (mv.scope === 'general') {
         generalExpense += amt;
+        const units = activeUnits(mv.date);
+        for (const u of units) generalShareByUnit[u.id] += amt / units.length;
       } else if (mv.unit) {
         individualExpenseByUnit[mv.unit] = (individualExpenseByUnit[mv.unit] || 0) + amt;
       }
     }
   }
 
-  const generalShare = generalExpense * GENERAL_EXPENSE_SHARE;
-
   const perUnit = Object.fromEntries(
     UNITS.map((u) => {
       const income = incomeByUnit[u.id] || 0;
       const individualExpense = individualExpenseByUnit[u.id] || 0;
+      const generalShare = generalShareByUnit[u.id];
       const result = income - individualExpense - generalShare;
       return [u.id, { income, individualExpense, generalShare, result }];
     })
