@@ -4,7 +4,7 @@ export const UNITS = [
   { id: 'yamaha', label: 'Yamaha' },
   // `since`: first day the unit is part of the business. General expenses dated
   // before it are split only among the units that existed then.
-  { id: 'luckysea', label: 'Lucky Sea', since: '2026-11-19' },
+  { id: 'lukisea', label: 'Luki Sea', since: '2026-11-19' },
 ];
 
 export const UNIT_LABELS = Object.fromEntries(UNITS.map((u) => [u.id, u.label]));

@@ -26,7 +26,7 @@ import {
 import { formatMoney, monthLabel } from '../lib/format';
 import { UNITS } from '../lib/constants';
 
-const UNIT_COLORS = { apto5h: '#1e3a5f', kichi: '#2f7d5f', yamaha: '#b5791b', luckysea: '#6d4fc2' };
+const UNIT_COLORS = { apto5h: '#1e3a5f', kichi: '#2f7d5f', yamaha: '#b5791b', lukisea: '#6d4fc2' };
 
 export default function Dashboard() {
   const { movements, transfers, loading } = useData();
