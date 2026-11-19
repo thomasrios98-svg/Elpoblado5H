@@ -97,7 +97,7 @@ const NO_WIFI=[];
 
 // ── GOOGLE CALENDAR CONFIG ────────────────────────────────────────────────────
 const GOOGLE_API_KEY="AIzaSyAdqLVRJMRUnOcUM8mAznpB7yxiy10xUMQ";
-const GOOGLE_CALENDAR_ID="thomasrios98@gmail.com";
+const GOOGLE_CALENDAR_ID="e750ab27eac1f7b000b8d02fc0345135af3648636724bd82ca2c084c743fbb08@group.calendar.google.com"; // calendario público "Reservas El Poblado 5H"
 
 // ── PROMOCIONES ──────────────────────────────────────────────────────────────
 const PROMOS = {
