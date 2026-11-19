@@ -2,9 +2,9 @@ export const UNITS = [
   { id: 'apto5h', label: 'Apto 5H' },
   { id: 'kichi', label: 'Kichi' },
   { id: 'yamaha', label: 'Yamaha' },
-  // `since`: first day the unit is part of the business. General expenses dated
+  // `since`: first day the unit shares general expenses. General expenses dated
   // before it are split only among the units that existed then.
-  { id: 'lukisea', label: 'Luki Sea', since: '2026-11-19' },
+  { id: 'lukisea', label: 'Luki Sea', since: '2026-12-15' },
 ];
 
 export const UNIT_LABELS = Object.fromEntries(UNITS.map((u) => [u.id, u.label]));

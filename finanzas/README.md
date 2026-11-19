@@ -160,7 +160,7 @@ USD directamente.
 
 Los gastos marcados como **generales** se dividen en partes iguales entre las
 unidades activas en la fecha del gasto (Apto 5H, Kichi y Yamaha; Luki Sea desde
-el 19 de noviembre de 2026, según `since` en `src/lib/constants.js`) al calcular
+el 15 de diciembre de 2026, cuando termina su modificación, según `since` en `src/lib/constants.js`) al calcular
 la rentabilidad de cada unidad.
 Los gastos **individuales** solo afectan a la unidad seleccionada.
 
