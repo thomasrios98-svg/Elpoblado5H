@@ -103,7 +103,7 @@ exports.financialAssistant = onCall(
   }
 );
 
-const BCV_EUR_URL = 'https://ve.dolarapi.com/v1/monedas/eur';
+const BCV_EUR_URL = 'https://ve.dolarapi.com/v1/euros/oficial';
 const BCV_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas: el BCV solo actualiza una vez por día hábil
 
 /**

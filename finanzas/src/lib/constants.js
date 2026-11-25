@@ -35,6 +35,7 @@ export const EXPENSE_CATEGORIES = [
   'Gasolina',
   'Intereses',
   'Pago de préstamo',
+  'Diferencia cambiaria',
   'Otros',
 ];
 
@@ -52,3 +53,41 @@ export const EXPENSE_SCOPES = [
 export function activeUnits(dateStr) {
   return UNITS.filter((u) => !u.since || !dateStr || dateStr >= u.since);
 }
+
+/**
+ * Reparto de cobros (fase préstamo Luki Sea). Cada ingreso registrado desde
+ * `start` (hora de creación, no la fecha del movimiento) se reparte igual,
+ * entre por donde entre. Los saldos empiezan en cero en ese momento.
+ */
+export const REPARTO = {
+  start: '2026-11-25T21:36:00Z',
+  pct: { pre: 23, mant: 22, sal: 17, ops: 38 },
+  salarioTecho: 2500,
+  prestamoMeta: 12000,
+  interes: 240,
+  primerInteres: '2026-12-20',
+  interesCadaDias: 30,
+};
+
+export const REPARTO_SECTIONS = [
+  { id: 'pre', label: 'Préstamo' },
+  { id: 'mant', label: 'Mantenimiento' },
+  { id: 'sal', label: 'Salario' },
+  { id: 'ops', label: 'Operación' },
+];
+
+// Cuentas reales por sección. Chase guarda mantenimiento y operación juntos.
+export const REPARTO_ACCOUNTS = [
+  { id: 'usdt', label: 'Binance USDT', sec: 'pre' },
+  { id: 'bofa6614', label: 'BofA 6614', sec: 'pre' },
+  { id: 'sol', label: 'Binance SOL', sec: 'mant' },
+  { id: 'chase_mant', label: 'Chase · mantenimiento', sec: 'mant' },
+  { id: 'eth', label: 'Binance ETH', sec: 'sal' },
+  { id: 'bofa4962', label: 'BofA 4962', sec: 'sal' },
+  { id: 'btc', label: 'Binance BTC', sec: 'ops' },
+  { id: 'chase_ops', label: 'Chase · operación', sec: 'ops' },
+  { id: 'banesco', label: 'Banesco (Bs)', sec: 'ops' },
+  { id: 'efectivo', label: 'Efectivo Tucacas', sec: 'ops' },
+];
+
+export const REPARTO_ACCOUNT_LABELS = Object.fromEntries(REPARTO_ACCOUNTS.map((a) => [a.id, a.label]));

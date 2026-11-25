@@ -9,6 +9,7 @@ import Profitability from './pages/Profitability';
 import Statistics from './pages/Statistics';
 import Recurring from './pages/Recurring';
 import AIAssistant from './pages/AIAssistant';
+import Reparto from './pages/Reparto';
 
 // Reportes carga exceljs/jspdf, que son pesados: se separan en su propio chunk.
 const Reports = lazy(() => import('./pages/Reports'));
@@ -22,6 +23,7 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/movimientos" element={<Movements />} />
             <Route path="/saldos" element={<Balances />} />
+            <Route path="/reparto" element={<Reparto />} />
             <Route path="/rentabilidad" element={<Profitability />} />
             <Route path="/estadisticas" element={<Statistics />} />
             <Route path="/recurrentes" element={<Recurring />} />

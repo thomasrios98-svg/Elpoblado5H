@@ -19,6 +19,8 @@ export function DataProvider({ children }) {
   const [movements, setMovements] = useState([]);
   const [transfers, setTransfers] = useState([]);
   const [recurringPatterns, setRecurringPatterns] = useState([]);
+  const [repartoMovs, setRepartoMovs] = useState([]);
+  const [repartoError, setRepartoError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -50,6 +52,15 @@ export function DataProvider({ children }) {
         (snap) => setRecurringPatterns(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
         handleError('recurringPatterns')
       ),
+      onSnapshot(
+        query(collection(db, 'repartoMovs'), orderBy('fecha', 'desc')),
+        (snap) => setRepartoMovs(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+        // Si las reglas de `repartoMovs` no están publicadas, solo falla el reparto.
+        (err) => {
+          console.error('[finanzas] Firestore (repartoMovs):', err);
+          setRepartoError(err);
+        }
+      ),
     ];
     return () => unsubs.forEach((u) => u());
   }, []);
@@ -59,11 +70,14 @@ export function DataProvider({ children }) {
       movements,
       transfers,
       recurringPatterns,
+      repartoMovs,
+      repartoError,
       loading,
       error,
       addMovement: (data) =>
         addDoc(collection(db, 'movements'), {
           ...data,
+          clientCreatedAt: Date.now(),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         }),
@@ -80,8 +94,11 @@ export function DataProvider({ children }) {
           { key, status, ...meta, updatedAt: serverTimestamp() },
           { merge: true }
         ),
+      addRepartoMov: (data) =>
+        addDoc(collection(db, 'repartoMovs'), { ...data, createdAt: serverTimestamp() }),
+      deleteRepartoMov: (id) => deleteDoc(doc(db, 'repartoMovs', id)),
     }),
-    [movements, transfers, recurringPatterns, loading, error]
+    [movements, transfers, recurringPatterns, repartoMovs, repartoError, loading, error]
   );
 
   return <DataContext.Provider value={api}>{children}</DataContext.Provider>;

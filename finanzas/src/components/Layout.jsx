@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: '📊' },
   { to: '/movimientos', label: 'Movimientos', icon: '💵' },
   { to: '/saldos', label: 'Saldos', icon: '🏦' },
+  { to: '/reparto', label: 'Reparto', icon: '🧮' },
   { to: '/rentabilidad', label: 'Rentabilidad', icon: '📈' },
   { to: '/estadisticas', label: 'Estadísticas', icon: '📉' },
   { to: '/recurrentes', label: 'Recurrentes', icon: '🔁' },

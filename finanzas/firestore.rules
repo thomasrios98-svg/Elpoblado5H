@@ -26,6 +26,12 @@ service cloud.firestore {
       allow create, update: if isValidRecurringPattern(request.resource.data);
     }
 
+    match /repartoMovs/{id} {
+      allow read: if true;
+      allow delete: if true;
+      allow create, update: if isValidRepartoMov(request.resource.data);
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
@@ -52,6 +58,14 @@ service cloud.firestore {
       && d.fromMethod is string && d.fromMethod.size() > 0
       && d.toMethod is string && d.toMethod.size() > 0
       && d.fromMethod != d.toMethod;
+  }
+
+  function isValidRepartoMov(d) {
+    return isDateString(d.fecha)
+      && d.monto is number && d.monto > 0
+      && d.de is string && d.de.size() > 0
+      && d.a is string && d.a.size() > 0
+      && d.de != d.a;
   }
 
   function isValidRecurringPattern(d) {

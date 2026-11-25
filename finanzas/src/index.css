@@ -486,3 +486,33 @@ textarea:focus {
     z-index: 40;
   }
 }
+
+/* Reparto */
+.rep-intro { font-size: 13px; margin: -4px 0 16px; max-width: 80ch; }
+.rep-seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+@media (max-width: 480px) { .rep-seg { grid-template-columns: repeat(2, 1fr); } }
+.rep-seg button { padding: 9px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-alt); color: var(--text); font-weight: 600; cursor: pointer; }
+.rep-seg button[aria-pressed='true'] { background: var(--primary); border-color: var(--primary); color: #fff; }
+.rep-hint { font-size: 11px; color: var(--text-muted); }
+.rep-steps { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14px; }
+.rep-moves { display: grid; gap: 6px; margin-top: 6px; }
+.rep-move { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-alt); }
+.rep-move.loan { background: #e2f5ea; border-color: #bfe3cf; }
+.rep-move strong { font-size: 14px; }
+.rep-why { display: block; font-size: 12px; color: var(--text-muted); }
+.rep-amt { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rep-move.loan .rep-amt { color: var(--income); }
+.rep-note { font-size: 13px; padding: 9px 12px; border-radius: 6px; border-left: 3px solid var(--primary); background: var(--surface-alt); margin-top: 10px; }
+.rep-note.ok { border-left-color: var(--income); background: #eef8f2; }
+.rep-note.warn { border-left-color: var(--warning); background: #fdf6ea; }
+.rep-sections { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media (max-width: 600px) { .rep-sections { grid-template-columns: 1fr; } }
+.rep-sec { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; min-width: 0; }
+.rep-sec.loan { background: #eef8f2; border-color: #bfe3cf; }
+.rep-sec-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 600; }
+.rep-sec-head strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+.rep-acc { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--text-muted); }
+.rep-acc span:last-child { color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rep-bar { height: 8px; border-radius: 999px; background: #fff; border: 1px solid var(--border); overflow: hidden; }
+.rep-bar i { display: block; height: 100%; background: var(--income); }
+.rep-pending { border-top: 1px solid var(--border); padding: 12px 0; display: grid; gap: 8px; }
