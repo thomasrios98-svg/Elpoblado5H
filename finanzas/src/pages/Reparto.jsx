@@ -292,8 +292,8 @@ export default function Reparto() {
         </div>
       )}
 
-      <div className="grid cols-2">
-        <form className="card" style={{ marginTop: 0 }} onSubmit={handleSave}>
+      <div className="rep-top">
+        <form className="card" onSubmit={handleSave}>
           <div className="section-title">Me entró</div>
           <div className="rep-seg" role="group" aria-label="Por dónde entró">
             {VIAS.map((v) => (
@@ -407,7 +407,7 @@ export default function Reparto() {
           {msg && <p className="text-muted" style={{ fontSize: 13, marginBottom: 0 }}>{msg}</p>}
         </form>
 
-        <div className="card" style={{ marginTop: 0 }}>
+        <div className="card">
           <div className="section-title">Saldos</div>
           <div className="rep-sections">
             {REPARTO_SECTIONS.map((s) => (
