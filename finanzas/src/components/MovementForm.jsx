@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { UNITS, UNIT_LABELS, PAYMENT_METHODS, EXPENSE_CATEGORIES, EXPENSE_SCOPES } from '../lib/constants';
 import { todayISO } from '../lib/format';
 import { fetchBcvEurRate } from '../lib/exchangeRate';
+import { bsConversion, fetchParaleloRate } from '../lib/reparto';
+import { formatMoney } from '../lib/format';
 
 const emptyForm = () => ({
   type: 'income',
@@ -9,6 +11,8 @@ const emptyForm = () => ({
   currency: 'USD',
   amount: '',
   vesAmount: '',
+  binanceRate: '',
+  keepBs: '',
   method: PAYMENT_METHODS[0].id,
   unit: UNITS[0].id,
   scope: 'individual',
@@ -25,6 +29,7 @@ export default function MovementForm({ editingMovement, onSubmit, onCancelEdit }
   const [rateLoading, setRateLoading] = useState(false);
   const [rateError, setRateError] = useState('');
   const [manualRate, setManualRate] = useState('');
+  const [paralelo, setParalelo] = useState(null);
   const amountRef = useRef(null);
 
   useEffect(() => {
@@ -35,6 +40,8 @@ export default function MovementForm({ editingMovement, onSubmit, onCancelEdit }
         currency: 'USD',
         amount: String(editingMovement.amount ?? ''),
         vesAmount: '',
+        binanceRate: '',
+        keepBs: '',
         method: editingMovement.method,
         unit: editingMovement.unit || UNITS[0].id,
         scope: editingMovement.scope || 'individual',
@@ -55,7 +62,22 @@ export default function MovementForm({ editingMovement, onSubmit, onCancelEdit }
       .finally(() => setRateLoading(false));
   }, [form.currency, rateInfo, rateLoading]);
 
+  // Tasa paralelo en vivo: sugerencia para la tasa Binance a la que se cambian los Bs.
+  useEffect(() => {
+    if (form.currency !== 'VES' || paralelo) return;
+    fetchParaleloRate()
+      .then((p) => {
+        setParalelo(p);
+        setForm((f) => (f.binanceRate ? f : { ...f, binanceRate: p.rate.toFixed(2) }));
+      })
+      .catch(() => setParalelo({ error: true }));
+  }, [form.currency, paralelo]);
+
   const effectiveRate = Number(rateInfo?.rate) || Number(manualRate) || 0;
+  const conv =
+    form.currency === 'VES'
+      ? bsConversion({ bs: form.vesAmount, bcv: effectiveRate, binance: Number(form.binanceRate), keepBs: form.keepBs })
+      : null;
 
   useEffect(() => {
     if (form.currency !== 'VES') return;
@@ -127,12 +149,42 @@ export default function MovementForm({ editingMovement, onSubmit, onCancelEdit }
       payload.unit = form.scope === 'individual' ? form.unit : null;
     }
 
-    onSubmit(payload, editingMovement?.id);
+    // Bs con tasa Binance: el reparto usa lo que de verdad queda al cambiar y la
+    // diferencia contra la tasa BCV se registra como gasto aparte.
+    const extras = [];
+    if (form.type === 'income' && conv && !editingMovement) {
+      payload.method = 'pago_movil';
+      payload.reparto = {
+        bs: conv.bs,
+        bcv: conv.bcv,
+        binance: conv.binance,
+        keepBs: conv.keepBs,
+        keepUsd: conv.keepUsd,
+        usdtNet: conv.usdtNet,
+      };
+      const bsNote = `${conv.bs.toLocaleString('es-VE')} Bs · BCV ${conv.bcv.toFixed(2)} · Binance ${conv.binance}`;
+      payload.note = payload.note ? `${payload.note} · ${bsNote}` : bsNote;
+      if (conv.perdida >= 0.01) {
+        extras.push({
+          type: 'expense',
+          date: form.date,
+          amount: conv.perdida,
+          method: 'pago_movil',
+          description: `Diferencia cambiaria BCV → Binance (${description})`,
+          note: `${conv.convBs.toLocaleString('es-VE')} Bs cambiados: BCV ${conv.bcv.toFixed(2)} vs Binance ${conv.binance}`,
+          category: 'Diferencia cambiaria',
+          scope: 'general',
+          unit: null,
+        });
+      }
+    }
+
+    onSubmit(payload, editingMovement?.id, extras);
 
     if (editingMovement) {
       onCancelEdit();
     } else if (quickEntry) {
-      setForm((f) => ({ ...f, amount: '', vesAmount: '', description: '', note: '' }));
+      setForm((f) => ({ ...f, amount: '', vesAmount: '', keepBs: '', description: '', note: '' }));
       amountRef.current?.focus();
     } else {
       setForm(emptyForm());
@@ -171,7 +223,15 @@ export default function MovementForm({ editingMovement, onSubmit, onCancelEdit }
             <label>Moneda del ingreso</label>
             <select
               value={form.currency}
-              onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value, vesAmount: '', amount: '' }))}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  currency: e.target.value,
+                  vesAmount: '',
+                  amount: '',
+                  method: e.target.value === 'VES' ? 'pago_movil' : f.method,
+                }))
+              }
             >
               <option value="USD">Dólares (USD)</option>
               <option value="VES">Bolívares (Bs)</option>
@@ -246,6 +306,48 @@ export default function MovementForm({ editingMovement, onSubmit, onCancelEdit }
               </div>
             )}
           </div>
+        )}
+
+        {form.currency === 'VES' && form.type === 'income' && !editingMovement && (
+          <>
+            <div className="field">
+              <label>Tasa Binance al cambiar (Bs por USDT)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Opcional"
+                value={form.binanceRate}
+                onChange={(e) => update('binanceRate', e.target.value)}
+              />
+              <span className="text-muted" style={{ fontSize: 11 }}>
+                {paralelo?.rate
+                  ? `Paralelo ahora: ${paralelo.rate.toFixed(2)}. Pon la que te dio Binance.`
+                  : paralelo?.error
+                    ? 'No cargó el paralelo: escríbela.'
+                    : 'Consultando paralelo…'}
+              </span>
+            </div>
+            <div className="field">
+              <label>Bs que dejo en Banesco para gastos</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0"
+                value={form.keepBs}
+                onChange={(e) => update('keepBs', e.target.value)}
+              />
+            </div>
+            {conv && (
+              <div className={'rep-note ' + (conv.perdida >= 0.01 ? 'warn' : 'ok')} style={{ gridColumn: '1 / -1', marginTop: 0 }}>
+                Cambias {conv.convBs.toLocaleString('es-VE')} Bs y te llegan unos {formatMoney(conv.usdtNet)} en USDT.
+                {conv.perdida >= 0.01
+                  ? ` Se pierden ${formatMoney(conv.perdida)} (${conv.perdidaPct.toFixed(1)}%) contra la tasa BCV: se registra solo como gasto "Diferencia cambiaria". En Reparto se reparten ${formatMoney(conv.usdtNet + conv.keepUsd)}.`
+                  : ` No se pierde nada en el cambio.`}
+              </div>
+            )}
+          </>
         )}
 
         <div className="field">

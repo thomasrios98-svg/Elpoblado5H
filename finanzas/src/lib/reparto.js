@@ -26,9 +26,9 @@ function createdMs(mv) {
   return 0; // movimientos viejos o importados sin fecha de creación: no cuentan
 }
 
-/** Solo cuenta lo registrado desde el inicio del reparto. */
+/** Cuenta lo fechado desde el inicio del reparto, o creado en la app después de empezar. */
 export function inReparto(mv) {
-  return createdMs(mv) >= START_MS;
+  return (mv.date || '') >= REPARTO.startDate || createdMs(mv) >= START_MS;
 }
 
 /**

@@ -29,9 +29,10 @@ export default function Movements() {
 
   const editingMovement = editingId ? movements.find((m) => m.id === editingId) : null;
 
-  async function handleSubmit(payload, id) {
+  async function handleSubmit(payload, id, extras = []) {
     if (id) await updateMovement(id, payload);
     else await addMovement(payload);
+    for (const extra of extras) await addMovement(extra);
   }
 
   async function handleDelete(id) {

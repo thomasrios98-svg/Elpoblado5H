@@ -7,7 +7,6 @@ import {
   REPARTO_ACCOUNTS,
   REPARTO_ACCOUNT_LABELS,
   REPARTO_SECTIONS,
-  UNITS,
   UNIT_LABELS,
   METHOD_LABELS,
 } from '../lib/constants';
@@ -21,13 +20,6 @@ import {
   nextInterest,
   sectionTotal,
 } from '../lib/reparto';
-
-const VIAS = [
-  { id: 'pago_movil', label: 'Bolívares' },
-  { id: 'binance', label: 'Binance' },
-  { id: 'zelle', label: 'Zelle' },
-  { id: 'efectivo', label: 'Efectivo' },
-];
 
 const SEC_LABEL = Object.fromEntries(REPARTO_SECTIONS.map((s) => [s.id, s.label]));
 const ACC_SEC = Object.fromEntries(REPARTO_ACCOUNTS.map((a) => [a.id, a.sec]));
@@ -45,8 +37,8 @@ function Move({ acc, amount, why, loan }) {
   );
 }
 
-/** Pasos a seguir para un ingreso ya repartido (asign = cuenta → monto). */
-function Steps({ method, asign, extra, conv }) {
+/** Pasos a seguir para repartir un ingreso (asign = cuenta → monto). */
+function Steps({ method, asign, extra, bs }) {
   const salWhy = 'Salario' + (extra ? ' (ya llegaste al techo del mes)' : '');
   if (method === 'efectivo') {
     return (
@@ -61,7 +53,7 @@ function Steps({ method, asign, extra, conv }) {
         <li>
           Pasa la parte del préstamo y la del salario:
           <div className="rep-moves">
-            <Move acc="bofa6614" amount={asign.bofa6614 || 0} why="Préstamo · hazlo hoy" loan />
+            <Move acc="bofa6614" amount={asign.bofa6614 || 0} why="Préstamo" loan />
             <Move acc="bofa4962" amount={asign.bofa4962 || 0} why={salWhy} />
           </div>
         </li>
@@ -77,18 +69,16 @@ function Steps({ method, asign, extra, conv }) {
   }
   return (
     <ol className="rep-steps">
-      {method === 'pago_movil' && conv && conv.keepBs > 0 && (
-        <li>Deja {conv.keepBs.toLocaleString('es-VE')} Bs en Banesco para los gastos en Bs.</li>
-      )}
-      {method === 'pago_movil' && conv && (
+      {bs && bs.keepBs > 0 && <li>Deja {bs.keepBs.toLocaleString('es-VE')} Bs en Banesco para los gastos en Bs.</li>}
+      {bs && (
         <li>
-          Cambia {conv.convBs.toLocaleString('es-VE')} Bs a USDT en Binance (te deben llegar unos {formatMoney(conv.usdtNet)}).
+          Cambia {bs.convBs.toLocaleString('es-VE')} Bs a USDT en Binance (te llegan unos {formatMoney(bs.usdtNet)}).
         </li>
       )}
       <li>
         {method === 'pago_movil' ? 'En Binance, repártelo así:' : 'Desde donde te llegó en Binance, repártelo así:'}
         <div className="rep-moves">
-          <Move acc="usdt" amount={asign.usdt || 0} why="Préstamo · hazlo hoy" loan />
+          <Move acc="usdt" amount={asign.usdt || 0} why="Préstamo" loan />
           <Move acc="sol" amount={asign.sol || 0} why="Mantenimiento" />
           <Move acc="eth" amount={asign.eth || 0} why={salWhy} />
           {asign.btc > 0 && <Move acc="btc" amount={asign.btc} why="Operación" />}
@@ -98,76 +88,115 @@ function Steps({ method, asign, extra, conv }) {
   );
 }
 
-const emptyForm = () => ({
-  method: '',
-  amount: '',
-  bs: '',
-  keepBs: '',
-  binanceRate: '',
-  unit: UNITS[0].id,
-  description: '',
-  date: todayISO(),
-});
+/** Un cobro por repartir. Los de Bs sin tasa Binance la piden aquí, al repartir. */
+function PendingItem({ item, rates, onDone }) {
+  const { mv } = item;
+  const needsRate = mv.method === 'pago_movil' && !mv.reparto;
+  const [bcv, setBcv] = useState('');
+  const [binance, setBinance] = useState('');
+  const [keepBs, setKeepBs] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (needsRate && !bcv && rates.bcv) setBcv(rates.bcv.toFixed(2));
+  }, [needsRate, bcv, rates.bcv]);
+  useEffect(() => {
+    if (needsRate && !binance && rates.paralelo) setBinance(rates.paralelo.toFixed(2));
+  }, [needsRate, binance, rates.paralelo]);
+
+  // Bs recibidos = USD registrado × tasa BCV (así se convirtió al registrar).
+  const conv = needsRate
+    ? bsConversion({ bs: Number(mv.amount) * Number(bcv), bcv: Number(bcv), binance: Number(binance), keepBs })
+    : null;
+  const shown = needsRate
+    ? conv
+      ? allocate({ method: mv.method, base: conv.usdtNet + conv.keepUsd, keepUsd: conv.keepUsd, salarioMes: item.salarioMesAntes })
+      : null
+    : item;
+  const bsInfo = needsRate
+    ? conv
+    : mv.reparto
+      ? { keepBs: mv.reparto.keepBs || 0, convBs: (mv.reparto.bs || 0) - (mv.reparto.keepBs || 0), usdtNet: mv.reparto.usdtNet }
+      : null;
+
+  async function done() {
+    setBusy(true);
+    try {
+      await onDone(mv, conv);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rep-pending">
+      <div className="rep-sec-head">
+        <span>
+          {formatDate(mv.date)} · {UNIT_LABELS[mv.unit] || mv.unit} · {METHOD_LABELS[mv.method] || mv.method} ·{' '}
+          {formatMoney(mv.amount)}
+        </span>
+        <button className="btn small" onClick={done} disabled={busy || (needsRate && !conv)}>
+          {busy ? 'Guardando…' : 'Ya lo repartí'}
+        </button>
+      </div>
+      <div className="text-muted" style={{ fontSize: 12 }}>{mv.description}</div>
+      {needsRate && (
+        <div className="form-grid">
+          <div className="field">
+            <label>Tasa BCV Euro</label>
+            <input type="number" min="0" step="0.01" value={bcv} onChange={(e) => setBcv(e.target.value)} placeholder="Consultando…" />
+          </div>
+          <div className="field">
+            <label>Tasa Binance al cambiar</label>
+            <input type="number" min="0" step="0.01" value={binance} onChange={(e) => setBinance(e.target.value)} placeholder="Bs por USDT" />
+            <span className="rep-hint">{rates.paralelo ? `Paralelo ahora: ${rates.paralelo.toFixed(2)}` : 'Escríbela'}</span>
+          </div>
+          <div className="field">
+            <label>Bs que dejo en Banesco</label>
+            <input type="number" min="0" step="0.01" value={keepBs} onChange={(e) => setKeepBs(e.target.value)} placeholder="0" />
+          </div>
+        </div>
+      )}
+      {needsRate && conv && (
+        <div className={'rep-note ' + (conv.perdida >= 0.01 ? 'warn' : 'ok')}>
+          {conv.bs.toLocaleString('es-VE')} Bs.{' '}
+          {conv.perdida >= 0.01
+            ? `Al cambiar se pierden ${formatMoney(conv.perdida)} (${conv.perdidaPct.toFixed(1)}%): se registra como gasto "Diferencia cambiaria" y se reparten ${formatMoney(conv.usdtNet + conv.keepUsd)}.`
+            : 'No se pierde nada en el cambio.'}
+        </div>
+      )}
+      {shown && <Steps method={mv.method} asign={shown.asign} extra={shown.extra} bs={bsInfo} />}
+    </div>
+  );
+}
 
 export default function Reparto() {
-  const {
-    movements,
-    repartoMovs,
-    repartoError,
-    addMovement,
-    updateMovement,
-    addRepartoMov,
-    deleteRepartoMov,
-    loading,
-  } = useData();
+  const { movements, repartoMovs, repartoError, addMovement, updateMovement, addRepartoMov, deleteRepartoMov, loading } =
+    useData();
   const today = todayISO();
-  const [form, setForm] = useState(emptyForm());
-  const [bcv, setBcv] = useState(null);
-  const [bcvManual, setBcvManual] = useState('');
-  const [paralelo, setParalelo] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState('');
   const [mv, setMv] = useState({ de: 'btc', a: 'usdt', monto: '', fecha: todayISO(), nota: '' });
   const [mvMsg, setMvMsg] = useState('');
-
-  const isBs = form.method === 'pago_movil';
-
-  // Tasas: BCV Euro (función de la app) y paralelo en vivo como sugerencia de la tasa Binance.
-  useEffect(() => {
-    if (!isBs) return;
-    if (!bcv) fetchBcvEurRate().then(setBcv).catch(() => setBcv({ error: true }));
-    if (!paralelo)
-      fetchParaleloRate()
-        .then((p) => {
-          setParalelo(p);
-          setForm((f) => (f.binanceRate ? f : { ...f, binanceRate: p.rate.toFixed(2) }));
-        })
-        .catch(() => setParalelo({ error: true }));
-  }, [isBs, bcv, paralelo]);
-
-  const bcvRate = Number(bcv?.rate) || Number(bcvManual) || 0;
+  const [rates, setRates] = useState({});
+  const [doneMsg, setDoneMsg] = useState('');
 
   const { balances, incomes, expenses, salByMonth } = useMemo(
     () => computeReparto(movements, repartoMovs),
     [movements, repartoMovs]
   );
-
-  // Vista previa del cobro que se está escribiendo.
-  const conv = isBs
-    ? bsConversion({ bs: form.bs, bcv: bcvRate, binance: Number(form.binanceRate), keepBs: form.keepBs })
-    : null;
-  const previewBase = isBs ? (conv ? conv.usdtNet + conv.keepUsd : 0) : Number(form.amount) || 0;
-  const preview =
-    form.method && previewBase > 0
-      ? allocate({
-          method: form.method,
-          base: previewBase,
-          keepUsd: conv?.keepUsd || 0,
-          salarioMes: salByMonth[form.date.slice(0, 7)] || 0,
-        })
-      : null;
-
   const pending = incomes.filter((i) => !i.mv.repartido).slice().reverse();
+  const needsRates = pending.some((i) => i.mv.method === 'pago_movil' && !i.mv.reparto);
+
+  // Tasas solo si hay cobros en Bs sin tasa Binance.
+  useEffect(() => {
+    if (!needsRates || rates.loaded) return;
+    setRates((r) => ({ ...r, loaded: true }));
+    fetchBcvEurRate()
+      .then((d) => setRates((r) => ({ ...r, bcv: Number(d.rate) || null })))
+      .catch(() => {});
+    fetchParaleloRate()
+      .then((p) => setRates((r) => ({ ...r, paralelo: p.rate })))
+      .catch(() => {});
+  }, [needsRates, rates.loaded]);
 
   // Pagos semanales (marinos, muelle, gasolina): promedio de las últimas 4 semanas.
   const weekly = useMemo(() => {
@@ -188,66 +217,38 @@ export default function Reparto() {
   const ni = nextInterest(today);
   const totals = Object.fromEntries(REPARTO_SECTIONS.map((s) => [s.id, sectionTotal(balances, s.id)]));
   const salMes = salByMonth[today.slice(0, 7)] || 0;
+  const opsShort = weekly - totals.ops;
 
-  function update(field, value) {
-    setForm((f) => ({ ...f, [field]: value }));
-  }
-
-  async function handleSave(e) {
-    e.preventDefault();
-    if (!preview || saving) return;
-    setSaving(true);
-    setMsg('');
-    const description = form.description.trim() || `Cobro ${UNIT_LABELS[form.unit]}`;
-    try {
-      const base = {
-        type: 'income',
-        date: form.date,
-        method: form.method,
-        unit: form.unit,
-        description,
-        note: null,
-        category: null,
-        scope: null,
+  async function markDone(m, conv) {
+    if (conv) {
+      await updateMovement(m.id, {
         repartido: true,
-      };
-      if (isBs) {
+        reparto: {
+          bs: conv.bs,
+          bcv: conv.bcv,
+          binance: conv.binance,
+          keepBs: conv.keepBs,
+          keepUsd: conv.keepUsd,
+          usdtNet: conv.usdtNet,
+        },
+      });
+      if (conv.perdida >= 0.01) {
         await addMovement({
-          ...base,
-          amount: conv.incomeUsd,
-          note: `${conv.bs.toLocaleString('es-VE')} Bs · BCV ${conv.bcv} · Binance ${conv.binance}`,
-          reparto: {
-            bs: conv.bs,
-            bcv: conv.bcv,
-            binance: conv.binance,
-            keepBs: conv.keepBs,
-            keepUsd: conv.keepUsd,
-            usdtNet: conv.usdtNet,
-          },
+          type: 'expense',
+          date: m.date,
+          amount: conv.perdida,
+          method: 'pago_movil',
+          description: `Diferencia cambiaria BCV → Binance (${m.description})`,
+          note: `${conv.convBs.toLocaleString('es-VE')} Bs cambiados: BCV ${conv.bcv} vs Binance ${conv.binance}`,
+          category: 'Diferencia cambiaria',
+          scope: 'general',
+          unit: null,
         });
-        if (conv.perdida >= 0.01) {
-          await addMovement({
-            type: 'expense',
-            date: form.date,
-            amount: conv.perdida,
-            method: 'pago_movil',
-            description: `Diferencia cambiaria BCV → Binance (${description})`,
-            note: `${conv.convBs.toLocaleString('es-VE')} Bs: BCV ${conv.bcv} vs Binance ${conv.binance}`,
-            category: 'Diferencia cambiaria',
-            scope: 'general',
-            unit: null,
-          });
-        }
-      } else {
-        await addMovement({ ...base, amount: Number(Number(form.amount).toFixed(2)) });
       }
-      setMsg(`Registrado: ${formatMoney(isBs ? conv.incomeUsd : Number(form.amount))} por ${VIAS.find((v) => v.id === form.method).label}.`);
-      setForm((f) => ({ ...emptyForm(), method: f.method, unit: f.unit, binanceRate: f.binanceRate, date: f.date }));
-    } catch (err) {
-      setMsg('No se pudo registrar: ' + err.message);
-    } finally {
-      setSaving(false);
+    } else {
+      await updateMovement(m.id, { repartido: true });
     }
+    setDoneMsg(`Repartido: ${m.description}.`);
   }
 
   async function handleMove(e) {
@@ -259,11 +260,7 @@ export default function Reparto() {
       setMv((m) => ({ ...m, monto: '', nota: '' }));
       setMvMsg('Anotado.');
     } catch (err) {
-      setMvMsg(
-        err.code === 'permission-denied'
-          ? 'Firestore rechazó el registro: faltan publicar las reglas de "repartoMovs".'
-          : 'No se pudo anotar: ' + err.message
-      );
+      setMvMsg('No se pudo anotar: ' + err.message);
     }
   }
 
@@ -273,8 +270,6 @@ export default function Reparto() {
 
   if (loading) return <div className="empty-state">Cargando datos…</div>;
 
-  const opsShort = weekly - totals.ops;
-
   return (
     <div>
       <div className="page-header">
@@ -282,8 +277,8 @@ export default function Reparto() {
       </div>
       <p className="text-muted rep-intro">
         Cada cobro se reparte igual, entre por donde entre: préstamo {REPARTO.pct.pre}% · mantenimiento {REPARTO.pct.mant}% ·
-        salario {REPARTO.pct.sal}% · operación {REPARTO.pct.ops}%. Los saldos empezaron en cero el 25/11/2026 y cuentan todo lo que
-        registres desde entonces, aquí o en <Link to="/movimientos">Movimientos</Link>.
+        salario {REPARTO.pct.sal}% · operación {REPARTO.pct.ops}%. Los cobros y gastos se registran en{' '}
+        <Link to="/movimientos">Movimientos</Link> y aquí aparecen solos. Cuenta todo lo que tenga fecha desde el 26/11/2026.
       </p>
 
       {repartoError && (
@@ -293,119 +288,17 @@ export default function Reparto() {
       )}
 
       <div className="rep-top">
-        <form className="card" onSubmit={handleSave}>
-          <div className="section-title">Me entró</div>
-          <div className="rep-seg" role="group" aria-label="Por dónde entró">
-            {VIAS.map((v) => (
-              <button
-                type="button"
-                key={v.id}
-                aria-pressed={form.method === v.id}
-                onClick={() => update('method', v.id)}
-              >
-                {v.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="form-grid" style={{ marginTop: 12 }}>
-            {isBs ? (
-              <>
-                <div className="field">
-                  <label>Monto en Bs</label>
-                  <input type="number" min="0" step="0.01" value={form.bs} onChange={(e) => update('bs', e.target.value)} />
-                </div>
-                <div className="field">
-                  <label>Tasa BCV Euro</label>
-                  {bcv?.rate ? (
-                    <input type="number" value={bcv.rate} readOnly />
-                  ) : (
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder={bcv?.error ? 'Escríbela' : 'Consultando…'}
-                      value={bcvManual}
-                      onChange={(e) => setBcvManual(e.target.value)}
-                    />
-                  )}
-                </div>
-                <div className="field">
-                  <label>Tasa Binance al cambiar</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.binanceRate}
-                    onChange={(e) => update('binanceRate', e.target.value)}
-                  />
-                  <span className="rep-hint">
-                    {paralelo?.rate
-                      ? `Paralelo ahora: ${paralelo.rate.toFixed(2)}. Pon la que te dio Binance.`
-                      : paralelo?.error
-                        ? 'No cargó el paralelo: escríbela.'
-                        : 'Consultando paralelo…'}
-                  </span>
-                </div>
-                <div className="field">
-                  <label>Bs que dejo en Banesco</label>
-                  <input type="number" min="0" step="0.01" placeholder="0" value={form.keepBs} onChange={(e) => update('keepBs', e.target.value)} />
-                </div>
-              </>
-            ) : (
-              <div className="field">
-                <label>Monto (USD)</label>
-                <input type="number" min="0" step="0.01" value={form.amount} onChange={(e) => update('amount', e.target.value)} />
-              </div>
-            )}
-            <div className="field">
-              <label>Unidad</label>
-              <select value={form.unit} onChange={(e) => update('unit', e.target.value)}>
-                {UNITS.map((u) => (
-                  <option key={u.id} value={u.id}>{u.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label>Fecha</label>
-              <input type="date" value={form.date} onChange={(e) => update('date', e.target.value)} />
-            </div>
-            <div className="field" style={{ gridColumn: '1 / -1' }}>
-              <label>Descripción (opcional)</label>
-              <input type="text" placeholder={`Cobro ${UNIT_LABELS[form.unit]}`} value={form.description} onChange={(e) => update('description', e.target.value)} />
-            </div>
-          </div>
-
-          {isBs && conv && (
-            <div className={'rep-note ' + (conv.perdida >= 0.01 ? 'warn' : 'ok')}>
-              A tasa BCV son {formatMoney(conv.incomeUsd)}.
-              {conv.perdida >= 0.01
-                ? ` Al cambiar a tasa Binance se pierden ${formatMoney(conv.perdida)} (${conv.perdidaPct.toFixed(1)}%): se registra como gasto "Diferencia cambiaria" y se reparte sobre ${formatMoney(previewBase)}.`
-                : ` Al cambiar no se pierde nada: se reparten ${formatMoney(previewBase)}.`}
-            </div>
-          )}
-
-          {preview ? (
-            <div style={{ marginTop: 12 }}>
-              <div className="section-title" style={{ marginBottom: 6 }}>Qué hacer</div>
-              <Steps method={form.method} asign={preview.asign} extra={preview.extra} conv={conv} />
-              {preview.extra > 0 && (
-                <div className="rep-note ok">Tu salario del mes ya llegó a {formatMoney(REPARTO.salarioTecho)}: {formatMoney(preview.extra)} van al préstamo.</div>
-              )}
+        <div className="card">
+          <div className="section-title">Por repartir {pending.length > 0 && `(${pending.length})`}</div>
+          {pending.length === 0 ? (
+            <div className="empty-state">
+              Nada pendiente. Cuando registres un cobro en Movimientos, aparece aquí con lo que tienes que mover a cada cuenta.
             </div>
           ) : (
-            <p className="text-muted" style={{ fontSize: 13 }}>
-              {form.method ? 'Escribe el monto y aquí te digo a qué cuenta va cada parte.' : 'Elige por dónde entró.'}
-            </p>
+            pending.map((i) => <PendingItem key={i.mv.id} item={i} rates={rates} onDone={markDone} />)
           )}
-
-          <div className="btn-row" style={{ marginTop: 12 }}>
-            <button type="submit" className="btn" disabled={!preview || saving}>
-              {saving ? 'Registrando…' : 'Registrar · ya lo repartí'}
-            </button>
-          </div>
-          {msg && <p className="text-muted" style={{ fontSize: 13, marginBottom: 0 }}>{msg}</p>}
-        </form>
+          {doneMsg && <p className="text-muted" style={{ fontSize: 13, marginBottom: 0 }}>{doneMsg}</p>}
+        </div>
 
         <div className="card">
           <div className="section-title">Saldos</div>
@@ -453,38 +346,16 @@ export default function Reparto() {
           {ni.days <= 7 && (
             <div className="rep-note warn">
               El {formatDate(ni.date)} toca pagar {formatMoney(REPARTO.interes)} de interés desde Binance USDT o BofA 6614. Regístralo
-              como gasto con categoría Intereses.
+              en Movimientos como gasto con categoría Intereses.
             </div>
           )}
           <p className="text-muted" style={{ fontSize: 12, marginBottom: 0 }}>
-            Los gastos que registres en Movimientos se descuentan solos: Bs de Banesco, efectivo de Tucacas; Binance y Zelle de la
-            sección según la categoría (Mantenimiento/Reparaciones → mantenimiento, Intereses/Pago de préstamo → préstamo, "salario"
-            → salario, lo demás → operación).
+            Los gastos de Movimientos se descuentan solos: Bs de Banesco, efectivo de Tucacas; Binance y Zelle de la sección según la
+            categoría (Mantenimiento/Reparaciones → mantenimiento, Intereses/Pago de préstamo → préstamo, "salario" → salario, lo
+            demás → operación).
           </p>
         </div>
       </div>
-
-      {pending.length > 0 && (
-        <div className="card">
-          <div className="section-title">Por repartir ({pending.length})</div>
-          <p className="text-muted" style={{ fontSize: 13, marginTop: -6 }}>Cobros registrados en Movimientos que todavía no marcas como repartidos.</p>
-          {pending.map((i) => (
-            <div key={i.mv.id} className="rep-pending">
-              <div className="rep-sec-head">
-                <span>
-                  {formatDate(i.mv.date)} · {UNIT_LABELS[i.mv.unit] || i.mv.unit} · {METHOD_LABELS[i.mv.method] || i.mv.method} ·{' '}
-                  {formatMoney(i.mv.amount)}
-                </span>
-                <button className="btn small" onClick={() => updateMovement(i.mv.id, { repartido: true })}>Ya lo repartí</button>
-              </div>
-              <Steps method={i.mv.method} asign={i.asign} extra={i.extra} conv={null} />
-              {i.mv.method === 'pago_movil' && !i.mv.reparto && (
-                <p className="rep-hint">Registrado sin tasa Binance: se reparte sobre el monto a tasa BCV. Para contar la pérdida del cambio, regístralo desde esta página.</p>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
 
       <form className="card" onSubmit={handleMove}>
         <div className="section-title">Moví plata entre cuentas</div>
@@ -529,9 +400,9 @@ export default function Reparto() {
       </form>
 
       <div className="card">
-        <div className="section-title">Desde el 25/11/2026</div>
+        <div className="section-title">Desde el 26/11/2026</div>
         {incomes.length + expenses.length + repartoMovs.length === 0 ? (
-          <div className="empty-state">Todavía no hay nada. El primer cobro que registres aparece aquí.</div>
+          <div className="empty-state">Todavía no hay nada. El primer cobro que registres en Movimientos aparece aquí.</div>
         ) : (
           <div className="table-wrap">
             <table>
@@ -557,7 +428,10 @@ export default function Reparto() {
                       <td>{formatDate(row.date)}</td>
                       {row.kind === 'in' && (
                         <>
-                          <td><span className="badge income">Entró</span> {row.i.mv.description}</td>
+                          <td>
+                            <span className="badge income">Entró</span> {row.i.mv.description}
+                            {!row.i.mv.repartido && <span className="badge general" style={{ marginLeft: 6 }}>Por repartir</span>}
+                          </td>
                           <td>{Object.entries(row.i.asign).map(([k, v]) => `${REPARTO_ACCOUNT_LABELS[k]} ${formatMoney(v)}`).join(' · ')}</td>
                           <td>{formatMoney(row.i.mv.amount)}</td>
                           <td></td>

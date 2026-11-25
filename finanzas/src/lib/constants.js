@@ -55,11 +55,14 @@ export function activeUnits(dateStr) {
 }
 
 /**
- * Reparto de cobros (fase préstamo Luki Sea). Cada ingreso registrado desde
- * `start` (hora de creación, no la fecha del movimiento) se reparte igual,
- * entre por donde entre. Los saldos empiezan en cero en ese momento.
+ * Reparto de cobros (fase préstamo Luki Sea). Cada ingreso se reparte igual,
+ * entre por donde entre. Los saldos empiezan en cero el 26/11/2026.
  */
 export const REPARTO = {
+  // Cuenta todo movimiento con fecha desde `startDate` (sirve también para lo
+  // que se escribe por fuera de la app, sin fecha de creación), más lo creado
+  // en la app después de `start`.
+  startDate: '2026-11-26',
   start: '2026-11-25T21:36:00Z',
   pct: { pre: 23, mant: 22, sal: 17, ops: 38 },
   salarioTecho: 2500,
