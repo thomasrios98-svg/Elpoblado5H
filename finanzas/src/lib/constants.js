@@ -52,18 +52,3 @@ export const EXPENSE_SCOPES = [
 export function activeUnits(dateStr) {
   return UNITS.filter((u) => !u.since || !dateStr || dateStr >= u.since);
 }
-
-/**
- * Corte semanal (fase préstamo Luki Sea). Porcentajes sobre el ingreso bruto
- * de la semana. Al saldar el préstamo se vuelve al 22/25/53.
- */
-export const CORTE_CONFIG = {
-  pct: { operacion: 38, mantenimiento: 22, salario: 17, prestamo: 23 },
-  salarioPiso: 2000,
-  salarioTecho: 2500,
-  prestamoMeta: 12000,
-  interesMensual: 240,
-  // Primer interés; luego cada 30 días.
-  primerInteres: '2026-12-20',
-  interesCadaDias: 30,
-};

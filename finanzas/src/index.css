@@ -486,28 +486,3 @@ textarea:focus {
     z-index: 40;
   }
 }
-
-/* Corte semanal */
-.cut-week-nav { align-items: center; gap: 8px; flex-wrap: wrap; }
-.cut-week-nav strong { white-space: nowrap; font-size: 15px; }
-.cut-intro { font-size: 13px; margin: -4px 0 16px; }
-.cut-total { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
-.cut-total > div:first-child { flex: 1 1 320px; min-width: 0; }
-.cut-total-value { font-size: 30px; font-weight: 700; color: var(--primary); font-variant-numeric: tabular-nums; }
-.cut-tickets { display: grid; gap: 8px; }
-.cut-ticket { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-alt); }
-.cut-ticket.main { background: #e2f5ea; border-color: #bfe3cf; }
-.cut-ticket-title { font-weight: 600; font-size: 14px; }
-.cut-ticket-hint { font-size: 12px; color: var(--text-muted); }
-.cut-ticket-amount { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.cut-ticket.main .cut-ticket-amount { color: var(--income); }
-.cut-notes { display: grid; gap: 8px; margin-top: 12px; }
-.cut-note { font-size: 13px; padding: 9px 12px; border-radius: 6px; border-left: 3px solid var(--primary); background: var(--surface-alt); }
-.cut-note.ok { border-left-color: var(--income); background: #eef8f2; }
-.cut-note.warn { border-left-color: var(--warning); background: #fdf6ea; }
-.cut-bar { display: flex; height: 12px; border-radius: 999px; background: var(--surface-alt); border: 1px solid var(--border); overflow: hidden; }
-.cut-bar i { display: block; height: 100%; background: var(--income); }
-.cut-bar i.add { background: var(--warning); }
-.cut-loan-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 14px 0; }
-.cut-loan-grid span { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
-.cut-loan-grid strong { font-size: 16px; font-variant-numeric: tabular-nums; }
