@@ -26,6 +26,13 @@ service cloud.firestore {
       allow create, update: if isValidRecurringPattern(request.resource.data);
     }
 
+    match /cortes/{id} {
+      allow read: if true;
+      allow delete: if true;
+      allow create, update: if id == request.resource.data.weekStart
+        && isValidCorte(request.resource.data);
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
@@ -52,6 +59,15 @@ service cloud.firestore {
       && d.fromMethod is string && d.fromMethod.size() > 0
       && d.toMethod is string && d.toMethod.size() > 0
       && d.fromMethod != d.toMethod;
+  }
+
+  function isValidCorte(d) {
+    return isDateString(d.weekStart)
+      && d.total is number && d.total >= 0
+      && d.operacion is number && d.mantenimiento is number
+      && d.salario is number && d.prestamo is number
+      && d.prestamo >= 0 && d.mantenimiento >= 0 && d.salario >= 0
+      && d.efectivoSobrante is number && d.efectivoSobrante >= 0;
   }
 
   function isValidRecurringPattern(d) {
