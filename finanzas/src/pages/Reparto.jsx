@@ -7,6 +7,7 @@ import {
   REPARTO_ACCOUNTS,
   REPARTO_ACCOUNT_LABELS,
   REPARTO_SECTIONS,
+  REPARTO_AJUSTE,
   UNIT_LABELS,
   METHOD_LABELS,
 } from '../lib/constants';
@@ -360,12 +361,13 @@ export default function Reparto() {
       <form className="card" onSubmit={handleMove}>
         <div className="section-title">Moví plata entre cuentas</div>
         <p className="text-muted" style={{ fontSize: 13, marginTop: -6 }}>
-          Por ejemplo, lo que sobró de operación al préstamo, o de SOL a Banesco para pagar una reparación en Bs.
+          Por ejemplo, lo que sobró de operación al préstamo, o de SOL a Banesco para pagar una reparación en Bs. Para cargar plata que ya tenías, elige "Saldo inicial / ajuste" como origen.
         </p>
         <div className="form-grid">
           <div className="field">
             <label>De</label>
             <select value={mv.de} onChange={(e) => setMv({ ...mv, de: e.target.value })}>
+              <option value={REPARTO_AJUSTE}>Saldo inicial / ajuste (plata que ya tenías)</option>
               {REPARTO_ACCOUNTS.map((a) => (
                 <option key={a.id} value={a.id}>{a.label} · {SEC_LABEL[a.sec]}</option>
               ))}
@@ -447,7 +449,7 @@ export default function Reparto() {
                       )}
                       {row.kind === 'mv' && (
                         <>
-                          <td><span className="badge general">Movió</span> {row.t.nota || ''}</td>
+                          <td><span className="badge general">{row.t.de === REPARTO_AJUSTE ? 'Saldo inicial' : 'Movió'}</span> {row.t.nota || ''}</td>
                           <td>{REPARTO_ACCOUNT_LABELS[row.t.de]} → {REPARTO_ACCOUNT_LABELS[row.t.a]}</td>
                           <td>{formatMoney(row.t.monto)}</td>
                           <td><button className="btn danger small" onClick={() => handleDeleteMove(row.t.id)}>Borrar</button></td>

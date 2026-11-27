@@ -93,4 +93,10 @@ export const REPARTO_ACCOUNTS = [
   { id: 'efectivo', label: 'Efectivo Tucacas', sec: 'ops' },
 ];
 
-export const REPARTO_ACCOUNT_LABELS = Object.fromEntries(REPARTO_ACCOUNTS.map((a) => [a.id, a.label]));
+// `ajuste` no es una cuenta: es el origen de un saldo inicial o una corrección.
+export const REPARTO_AJUSTE = 'ajuste';
+
+export const REPARTO_ACCOUNT_LABELS = {
+  ...Object.fromEntries(REPARTO_ACCOUNTS.map((a) => [a.id, a.label])),
+  [REPARTO_AJUSTE]: 'Saldo inicial / ajuste',
+};
